@@ -1,5 +1,5 @@
 pandas>=1.4.2
-bods-client>=0.8.0
+bods-client>=0.9.1
 protobuf==3.20
 lxml==4.9.1
 xmltodict==0.13.0

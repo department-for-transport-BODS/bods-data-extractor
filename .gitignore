@@ -1,0 +1,9 @@
+_*/
+.venv
+*.xml
+*.zip
+*.csv
+_test/
+.DS_Store
+*.pyc
+dist/

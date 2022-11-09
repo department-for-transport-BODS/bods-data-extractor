@@ -12,14 +12,14 @@
   <p align="center">
     A python client for downloading and extracting data from the UK Bus Open Data Service 
     <br />
-    <a href="https://github.com/KPMG-UK/bods_pseudo_test"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/blob/main/src/BODSDataExtractor/example.py">View Demo</a>
     ·
-    <a href="https://github.com/KPMG-UK/bods_pseudo_test/issues">Report Bug</a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Report Bug</a>
     ·
-    <a href="https://github.com/KPMG-UK/bods_pseudo_test/issues">Request Feature</a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Request Feature</a>
   </p>
 </div>
 

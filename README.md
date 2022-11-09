@@ -110,7 +110,7 @@ Make sure to do step 2 in the terminal or command line (if using Anaconda Naviga
   
 2. Install BODS Data Extractor package 
     ```commandline
-      pip install --extra-index-url https://test.pypi.org/simple/ BODSDataExtractor
+      pip install BODSDataExtractor
       ```
 3. Open up a .py file and save your API to a variable
    ```python

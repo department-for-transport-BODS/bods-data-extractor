@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "BODSDataExtractor"
-version = "0.9.0"
+version = "0.9.1"
 authors = [
   { name="Ali Partner", email="ali.partner@kpmg.co.uk" },
     { name="Spencer Brittain", email="spencer.brittain@kpmg.co.uk" }
@@ -15,7 +15,7 @@ authors = [
 description = "This project was created to lower the barrier to entry for analysis of UK Bus Open Data. It facilitates the fetching and extraction of clean data, currently focussed on Timetables, into tables to be used for analysis or your own projects."
 readme = "README.md"
 license = { file="LICENSE" }
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

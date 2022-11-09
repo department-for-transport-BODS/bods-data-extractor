@@ -12,14 +12,14 @@
   <p align="center">
     A python client for downloading and extracting data from the UK Bus Open Data Service 
     <br />
-    <a href="https://github.com/KPMG-UK/bods_pseudo_test"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/blob/main/src/BODSDataExtractor/example.py">View Demo</a>
     ·
-    <a href="https://github.com/KPMG-UK/bods_pseudo_test/issues">Report Bug</a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Report Bug</a>
     ·
-    <a href="https://github.com/KPMG-UK/bods_pseudo_test/issues">Request Feature</a>
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Request Feature</a>
   </p>
 </div>
 
@@ -110,7 +110,7 @@ Make sure to do step 2 in the terminal or command line (if using Anaconda Naviga
   
 2. Install BODS Data Extractor package 
     ```commandline
-      pip install --extra-index-url https://test.pypi.org/simple/ BODSDataExtractor
+      pip install BODSDataExtractor
       ```
 3. Open up a .py file and save your API to a variable
    ```python

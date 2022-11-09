@@ -1,0 +1,16 @@
+LICENCE
+MANIFEST.in
+README.md
+pyproject.toml
+src/BODSDataExtractor/ATCO_code_to_LA_lookup.csv
+src/BODSDataExtractor/__init__.py
+src/BODSDataExtractor/example.py
+src/BODSDataExtractor/extractor.py
+src/BODSDataExtractor/otc_db_download.py
+src/BODSDataExtractor/proto_tests.py
+src/BODSDataExtractor/report test.py
+src/BODSDataExtractor.egg-info/PKG-INFO
+src/BODSDataExtractor.egg-info/SOURCES.txt
+src/BODSDataExtractor.egg-info/dependency_links.txt
+src/BODSDataExtractor.egg-info/requires.txt
+src/BODSDataExtractor.egg-info/top_level.txt

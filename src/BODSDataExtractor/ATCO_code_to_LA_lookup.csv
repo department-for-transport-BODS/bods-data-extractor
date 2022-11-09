@@ -1,0 +1,154 @@
+﻿Auth_Description,Admin Area Name associated with ATCO Code,ATCO Code
+Bristol City Council,Bristol,010
+South Gloucestershire Council,South Gloucestershire,017
+Bath & North East Somerset Council,Bath & North East Somerset,018
+North Somerset Council,North Somerset,019
+Bedfordshire County Council,Bedford,020
+Central Bedfordshire County Council,Central Bedfordshire,021
+Luton Borough Council,Luton,029
+West Berkshire District Council,West Berkshire,030
+Wokingham District Council,Wokingham,035
+Windsor & Maidenhead Borough Council,Windsor & Maidenhead,036
+Slough Borough Council,Slough,037
+Bracknell Forest Borough Council,Bracknell Forest,038
+Reading Borough Council,Reading,039
+Buckinghamshire County Council,Buckinghamshire,040
+Milton Keynes Council,Milton Keynes,049
+Cambridgeshire County Council,Cambridgeshire,050
+Peterborough City Council,Peterborough,059
+Cheshire East Council,Cheshire East,060
+Cheshire West and Chester Council,Cheshire West & Chester,061
+Halton Borough Council,Halton,068
+Warrington Borough Council,Warrington,069
+Hartlepool Borough Council,Hartlepool,075
+Darlington Borough Council,Darlington,076
+Stockton On Tees County Council,Stockton-on-Tees,077
+Redcar & Cleveland Borough Council,Redcar & Cleveland,078
+Middlesbrough Borough Council,Middlesbrough,079
+CornwallAndScillies,Cornwall,080
+Cumbria County Council ,Cumbria,090
+Derbyshire County Council,Derbyshire,100
+Derby City Council,Derby,109
+Devon,Devon,110
+Exeter City Council,Exeter ,111
+Plymouth City Council,Plymouth,118
+Torbay Borough Council,Torbay,119
+Dorset County Council,Dorset,120
+Poole Borough Council,Poole,128
+Bournemouth Borough Council,Bournemouth,129
+Durham City Council,Durham,130
+Durham County Council,Durham,130
+East Sussex County Council,East Sussex,140
+Brighton & Hove City Council,Brighton and Hove,149
+Essex County Council,Essex,150
+Southend-on-Sea Borough Council,Southend-on-Sea,158
+Thurrock Council,Thurrock,159
+Gloucestershire County Council,Gloucestershire,160
+Transport for Greater Manchester (TFGM),Greater Manchester,180
+Hampshire Council,Hampshire,190
+Southampton City Council,Southampton,198
+Portsmouth City Council,Portsmouth,199
+Worcestershire County Council,Worcestershire,200
+Herefordshire Council,Herefordshire,209
+Hertfordshire County Council,Hertfordshire,210
+East Riding of Yorkshire Council,East Riding of Yorkshire,220
+North Lincolnshire Council,North Lincolnshire,227
+North East Lincolnshire Council,North East Lincolnshire,228
+Kingston upon Hull,Kingston upon Hull,229
+Isle of Wight Council,Isle of Wight,230
+Kent County Council,Kent,240
+Medway Council,Medway,249
+Lancashire County Council,Lancashire,250
+Blackburn with Darwen Borough Council,Blackburn with Darwen,258
+Blackpool Borough Council,Blackpool,259
+Leicestershire County Council,Leicestershire,260
+Rutland County Council,Rutland,268
+Leicester City Council,Leicester,269
+Lincolnshire County Council,Lincolnshire,270
+Merseytravel pte,Merseyside,280
+Norfolk County Council,Norfolk,290
+Norfolk County Council,Norwich ,291
+Northamptonshire County Council,Northamptonshire,300
+Northumberland County Council,Northumberland,310
+North Yorkshire County Council,North Yorkshire,320
+York City Council,York,329
+Nottinghamshire County Council,Nottinghamshire,330
+Nottingham City Council,Nottingham,339
+Oxfordshire County Council,Oxfordshire,340
+Shropshire County Council,Shropshire,350
+Telford & Wrekin Council,Telford & Wrekin,359
+Somerset County Council,Somerset,360
+South Yorkshire pte,South Yorkshire,370
+Staffordshire County Council,Staffordshire,380
+City of Stoke-on-Trent Council,Stoke-on-Trent,389
+Suffolk County Council,Suffolk,390
+Surrey County Council,Surrey,400
+Nexus (Tyne & Wear),Tyne & Wear,410
+Warwickshire County Council,Warwickshire,420
+West Midlands Combined Authority (WMCA),West Midlands,430
+West Sussex County Council,West Sussex,440
+West Yorkshire pte,West Yorkshire,450
+Wiltshire County Council,Wiltshire,460
+Swindon Borough Council,Swindon,468
+Transport For London,Greater London,490
+Denbighshire Council,Denbighshire,511
+Flintshire County Council,Flintshire,512
+Conwy County Borough Council,Conwy,513
+Wrexham County Borough Council,Wrexham,514
+Pembrokeshire Council,Pembrokeshire,521
+Carmarthenshire Council,Carmarthenshire,522
+Ceredigion County Council,Ceredigion,523
+Newport Council,Newport,531
+Gwent Joint Passenger Transport Unit,Blaenau Gwent,532
+Monmouthshire Council,Monmouthshire,533
+Torfaen Council,Torfaen,534
+Gwynedd County Council,Gwynedd,540
+The Isle of Anglesey County Council,Isle of Anglesey,541
+Bridgend County Borough Council,Bridgend,551
+Rhondda Cynon Taff Council,Rhondda Cynon Taff,552
+Merthyr Tydfil,Merthyr Tydfil,553
+Caerphilly County Borough Council,Caerphilly,554
+Powys County Council,Powys,561
+Cardiff County Council,Cardiff,571
+Vale of Glamorgan Council,Vale of Glamorgan,572
+City & County of Swansea,Swansea,581
+Neath Port Talbot Borough Council,Neath Port Talbot,582
+Western Isles Council,Western Isles,601
+Orkney Islands Council,Orkney Islands,602
+Shetland Islands Council,Shetland Islands,603
+Argyll & Bute Council,Argyll & Bute,607
+Glasgow City Council,West Dunbartonshire,608
+Glasgow City Council,Glasgow,609
+Glasgow City Council,East Dunbartonshire,611
+East Renfrewshire Council,East Renfrewshire,612
+Inverclyde Council,Inverclyde,613
+Renfrewshire Council,Renfrewshire,614
+South Lanarkshire Council,South Lanarkshire,615
+North Lanarkshire Council,North Lanarkshire,616
+North Ayrshire Council,North Ayrshire,617
+East Ayrshire Council,East Ayrshire,618
+South Ayrshire Council,South Ayrshire,619
+The City of Edinburgh Council,Edinburgh,620
+East Lothian Council,East Lothian,627
+Midlothian Council,Midlothian,628
+West Lothian Council,West Lothian,629
+Aberdeenshire Council,Aberdeenshire,630
+Moray Council,Moray,638
+Aberdeen City Council,Aberdeen,639
+Dundee City Council,Dundee,640
+Perth & Kinross Council,Perth & Kinross,648
+Angus Council,Angus,649
+Fife Council,Fife,650
+Stirling Council,Stirling,660
+Clackmannan Council,Clackmannanshire,668
+Falkirk District Council,Falkirk,669
+Highland Council,Highland,670
+Dumfries & Galloway Council,Dumfries & Galloway,680
+Scottish Borders Council,Scottish Borders,690
+Bedford County Council,Bedford,020
+East Grinstead Town Council,East Grinstead,
+Newcastle-upon-Tyne City Council,Newcastle-Under-Lyme,
+Metro,,
+Comhairle nan Eilean Siar Council,,
+Strathclyde Partnership for Transport,,
+Weymouth & Portland Borough Council,,

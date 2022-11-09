@@ -1,0 +1,3 @@
+include src/BODSDataExtractor/ATCO_code_to_LA_lookup.csv
+include *.md *.py LICENCE
+exclude requirements.txt

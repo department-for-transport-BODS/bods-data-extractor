@@ -2,7 +2,7 @@ Metadata-Version: 2.1
 Name: BODSDataExtractor
 Version: 0.9.1
 Summary: This project was created to lower the barrier to entry for analysis of UK Bus Open Data. It facilitates the fetching and extraction of clean data, currently focussed on Timetables, into tables to be used for analysis or your own projects.
-Author-email: Ali Partner <ali.partner@kpmg.co.uk>, Spencer Brittain <spencer.brittain@kpmg.co.uk>
+Author-email: "Ali Partner, Spencer Brittain" <bodshelpdesk@kpmg.co.uk>
 Project-URL: Homepage, https://github.com/department-for-transport-BODS/bods-data-extractor
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License

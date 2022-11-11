@@ -31,7 +31,7 @@ cligj==0.7.2
 cloudpickle==2.0.0
 colorama==0.4.4
 commonmark==0.9.1
-cookiecutter==1.7.3
+cookiecutter==2.1.1
 cryptography==37.0.1
 cycler==0.11.0
 debugpy==1.5.1

@@ -20,6 +20,8 @@
     <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Report Bug</a>
     ·
     <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Request Feature</a>
+    ·
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/fork">Contribute</a>
   </p>
 </div>
 
@@ -424,7 +426,19 @@ See the [open issues](https://github.com/KPMG-UK/bods_pseudo_test/issues) for a 
 
 
 <!-- CONTRIBUTING -->
-## Contact / Contribute
+## Contribute / Contact
+
+### Contribute to this project
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+If you want to suggest an new or improved feature, open an issue with the tag "enhancement". 
+
+If you want to develop a new or improved feature yourself, fork the repo, develop within a new branch, then create a pull request back to this repo. We will then review and potentially merge into main if appropriate. Click the link below for more detailed instructions on how to contribute to a repo.
+
+https://docs.github.com/en/get-started/quickstart/contributing-to-projects
+
+Don't forget to give the project a star! Thanks again!
 
 ### Contact the Bus Open Data Service
 
@@ -443,10 +457,7 @@ There is a discord server for consumers of BODS Data:
 
 https://discord.gg/4mMg5VXm5A
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

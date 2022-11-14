@@ -20,6 +20,8 @@
     <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Report Bug</a>
     ·
     <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/issues">Request Feature</a>
+    ·
+    <a href="https://github.com/department-for-transport-BODS/bods-data-extractor/fork">Contribute</a>
   </p>
 </div>
 

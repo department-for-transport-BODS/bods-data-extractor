@@ -436,7 +436,6 @@ If you want to develop a new or improved feature yourself, fork the repo, develo
 
 https://docs.github.com/en/get-started/quickstart/contributing-to-projects
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
 ### Contact the Bus Open Data Service

@@ -24,6 +24,7 @@ from collections import Counter
 import importlib.resources
 
 
+
 class TimetableExtractor:
 
 
@@ -45,6 +46,7 @@ class TimetableExtractor:
         if service_line_level == True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
+            self.check_for_expired_operators()
         else:
             pass
 
@@ -394,8 +396,13 @@ class TimetableExtractor:
 
             operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
             xml_output.append(operating_period_end_date)
+            
+     ###      
+            #expired=[]
+            #if operating_period_end_date>=date.today():
+             #   xml_output.append(expired)
 
-
+###
             schema_version = xmlDataExtractor.extract_schema_version(xml_data)
             xml_output.append(schema_version)
 
@@ -544,12 +551,61 @@ class TimetableExtractor:
         '''
 
         #conditional logic required, as json cols dont exist if stop_level parameter != True
+
+        
         if self.stop_level == True:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-
         return self.service_line_extract
+
+#Evaluating if an operating date is expired
+
+  
+    def expiredStatus(value, OperatingPeriodEndDate, today):
+        
+            expValue=False
+            
+            if OperatingPeriodEndDate>=today:
+                expValue=False
+                                       
+                                       
+            elif OperatingPeriodEndDate<today:
+                expValue=True
+                                       
+            else:
+                print("Unknown")
+            
+            return(expValue)
+            
+#Adding Boolean to dataframe
+            
+    def check_for_expired_operators(self):
+        
+        expiredFlag = []
+        
+        #convert operating date
+        if self.service_line_level == True:
+            for value in self.service_line_extract['OperatingPeriodEndDate']:
+                if value==None:
+                    expiredFlag.append("No End Date")
+                    continue
+                
+                #Clean Operating Period Date    
+                OperatingPeriodEndDate= datetime.datetime.strptime(value,"%Y-%m-%d")
+                OperatingPeriodEndDate=OperatingPeriodEndDate.strftime("%Y-%m-%d")   
+                    
+                #Clean Today's Date
+                today=datetime.datetime.now()
+                today=today.strftime("%Y-%m-%d")
+                
+                    
+                expiredFlag.append(TimetableExtractor.expiredStatus(value,OperatingPeriodEndDate,today))
+                    
+        self.service_line_extract["Expired_Operator"] = expiredFlag
+        
+                            
+        return self.service_line_extract , OperatingPeriodEndDate, today
 
 
     def zip_or_xml(self, extension, url):
@@ -1299,6 +1355,20 @@ class TimetableExtractor:
         print(*datasets, sep = ', ')
 
         return red_score
+    
+    #############
+    def expired_operators(self):
+        '''returns total amount of expired operators'''
+        
+        operator_expired= self.metadata.query('operating_period_end_date'>=date.today())
+        
+        expireCount=operator_expired['operator_name'].unique()
+        
+        print('Number of expired Operators')
+        print(expireCount)
+        
+        return operator_expired
+###############    
 
 
     def dq_less_than_x(self, score):
@@ -1938,14 +2008,8 @@ class xmlDataExtractor:
         operating_period_end_date = [i.text if len(i.text) >0 else 'No Data' for i in data]
         
         return operating_period_end_date
-
-        #returns 'no data' if this is blank as many are empty
-        #if len(operating_period_end_date) > 0:
-            
-            #return operating_period_end_date
-        
-        #else:
-            #return ['No Data']
+    
+             
        
     def extract_schema_version(self):
         
@@ -1996,8 +2060,5 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
-
-    
 
 

@@ -8,3 +8,4 @@ _test/
 *.pyc
 dist/
 .env
+ap_sandbox.py

@@ -23,6 +23,11 @@ import datetime
 from collections import Counter
 import importlib.resources
 
+from shapely.geometry import Point
+from geopandas import GeoDataFrame
+import plotly.express as px
+import plotly.io as pio
+
 
 class TimetableExtractor:
 
@@ -1276,7 +1281,50 @@ class TimetableExtractor:
             k = str(k)
             k = k.replace(':','_')
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
+                       
+            
+    def visualise_service_line(self, service_code):
+        '''
+       Visualise the route and timings of vehicle journeys from a specified
+       service code.
+        '''
+        
+        #filter dictionary of dataframes to just service code of interest and access df
+        filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)
+        for k, v in filtered_dict.items():
+            df = v
 
+        #df must be processed from wide to long for visualisation
+        df_melt = pd.melt(df, id_vars=['DatasetID','ServiceCode_LineName_RevisionNumber','ServiceCode','LineName','RevisionNumber','sequence_number','stop_from','CommonName','Longitude','Latitude'])
+        #remove nulls that represent where a bus doesnt stop at that stop
+        df_melt = df_melt.dropna(subset=['value'])
+        
+        #get names of service, line, revision number needed for the title of the viz
+        service_code = df_melt['ServiceCode'].iloc[0]
+        line_name = df_melt['LineName'].iloc[0]
+        revision_number = df_melt['RevisionNumber'].iloc[0]
+        
+        #create geo df 
+        geometry = [Point(xy) for xy in zip(df_melt['Longitude'], df_melt['Latitude'])]
+        gdf = GeoDataFrame(df_melt, geometry=geometry)   
+
+        #create viz
+        pio.renderers.default='browser'
+        fig = px.line_mapbox(
+            lat=gdf.geometry.y,
+            lon=gdf.geometry.x,
+            color=gdf.variable
+            ,hover_data={'Stop name':gdf.CommonName,'Stop number':gdf.sequence_number, 'time at stop':gdf.value,}
+            ,title = f'Vehicle Journeys (VJ) for: Service code - {service_code}, Line - {line_name}, File revision number - {revision_number}'
+        ).update_traces(mode="lines+markers").update_layout(
+            mapbox={
+                "style": "carto-positron",
+                "zoom": 12,
+            },
+            margin={"l": 25, "r": 25, "t": 50},
+        )
+            
+        return fig.show()
 
 # =============================================================================
 #       REPORTING FUNCTIONS

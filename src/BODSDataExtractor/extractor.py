@@ -1324,6 +1324,7 @@ class TimetableExtractor:
             margin={"l": 25, "r": 25, "t": 50},
         )
             
+        print('\nTimetable visualised in browser!')
         return fig.show()
 
 # =============================================================================

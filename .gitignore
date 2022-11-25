@@ -7,3 +7,5 @@ _test/
 .DS_Store
 *.pyc
 dist/
+.env
+ap_sandbox.py

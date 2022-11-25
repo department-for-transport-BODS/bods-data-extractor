@@ -53,7 +53,8 @@ stop_level = my_bus_data_object.timetable_dict
 #stop_level variable is a dictionary of dataframes, which can be saved to csv as follows (saves in downloads folder)
 my_bus_data_object.save_all_timetables_to_csv()
 
-
+#visualise a particular service line on an interactive map
+my_bus_data_object.visualise_service_line('PB0001746:3')
 
 
 #-------------------------------------------

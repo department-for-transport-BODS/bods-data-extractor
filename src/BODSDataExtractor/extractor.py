@@ -46,14 +46,23 @@ class TimetableExtractor:
         self.stop_level = stop_level
         self.pull_timetable_data()
         self.otc_db = otc_db_download.fetch_otc_db()
+        
+        
+        if service_line_level == True and stop_level == True:
+            self.analytical_timetable_data()
+            self.analytical_timetable_data_analysis()
+            self.generate_timetable()
+        else:
+            pass
+            
 
-        if service_line_level == True:
+        if service_line_level == True and stop_level == False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
         else:
             pass
 
-        if stop_level == True:
+        if stop_level == True and  service_line_level == False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -440,7 +449,9 @@ class TimetableExtractor:
             output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
         else:
             output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
-
+            
+        
+        
         return output_df
 
 
@@ -2045,8 +2056,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
-
-    
-
-

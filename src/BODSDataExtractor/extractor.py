@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May 24 16:40:58 2022
+
+@author: sbrittain
+"""
+
+
 import pandas as pd
 import json
 import requests
@@ -11,23 +19,18 @@ import xmltodict
 import itertools
 from itertools import zip_longest, product
 import numpy as np
-from pathlib import Path
-from sys import platform
-# try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
+
+#try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
 try:
     import BODSDataExtractor.otc_db_download as otc_db_download
 except:
     import otc_db_download
+    
 from datetime import date
 import datetime
 from collections import Counter
 import importlib.resources
-
-from shapely.geometry import Point
-from geopandas import GeoDataFrame
-import plotly.express as px
-import plotly.io as pio
-
+#%% Class Definitions
 
 class TimetableExtractor:
 
@@ -1151,62 +1154,24 @@ class TimetableExtractor:
             #concat lists together
             self.timetable_dict = {f'{i}_{j}': k for i, j, k in zip(list_of_datasets, list_of_service_codes, list_of_dfs)}
 
-        print('Timetable generated!')
+
         return self.timetable_dict
-
-
-    def get_user_downloads_folder(self):
-        if platform == "win32":
-            downloads_folder = str(Path.home() / "Downloads")
-
-        elif platform == "darwin" or "linux":
-            # for macOS or linux
-            downloads_folder = str(os.path.join(Path.home(), "Downloads"))
-
-        else:
-            print("Unrecognised OS, cannot locate downloads folder")
-            downloads_folder = ""
-
-        return downloads_folder
 
     def create_today_folder(self):
         '''
         Create a folder, named with the days data, so that timetables can be saved locally
         '''
         today = str(date.today())
-        downloads_folder = TimetableExtractor.get_user_downloads_folder(self)
+        files = os.listdir()
+        folder = f'timetable_output_{today}'
 
-        # list out the file names in the downloads folder
-        files = os.listdir(downloads_folder)
-
-        # create the path for today folder in downloads
-        today_folder_path = downloads_folder + '/' + today
-
-        # if timetable output folder is not in downloads, create
-        if today not in files:
-            os.mkdir(today_folder_path)
+        if folder not in files:
+            os.mkdir(folder)
 
         else:
             print('file with todays date already exists')
 
-        return today_folder_path
-
-    def create_timetable_folder(self):
-
-        today_folder = TimetableExtractor.create_today_folder(self)
-        timetable_folder = 'timetable_output'
-
-        timetable_destination = f'{today_folder}/{timetable_folder}'
-
-        files = os.listdir(today_folder)
-
-        if timetable_folder not in files:
-            os.mkdir(timetable_destination)
-
-        else:
-            print('timetable folder with todays date already exists')
-
-        return timetable_destination
+        return folder
 
     def filter_timetable_dict(self, service_code):
 
@@ -1220,30 +1185,6 @@ class TimetableExtractor:
         filtered_dict = {k:v for k,v in self.timetable_dict.items() if service_code in k}
         return filtered_dict
 
-
-    def save_metadata_to_csv(self):
-        """
-        Save metadata table to csv file
-        """
-        
-        
-        #ensure no cell value exceeds 32,767 characters (this is excel limit)
-        metadata = self.metadata
-        metadata['localities'] = metadata['localities'].apply(lambda x: x[0:400])
-
-        
-        destination = TimetableExtractor.create_today_folder(self)
-        metadata.to_csv(f'{destination}/metadata.csv', index=False)
-
-
-    def save_service_line_extract_to_csv(self):
-        """
-        Save service line table to csv file
-        """
-
-        destination = TimetableExtractor.create_today_folder(self)
-        self.service_line_extract.to_csv(f'{destination}/service_line_extract.csv', index=False)
-
     def save_all_timetables_to_csv(self):
 
         '''
@@ -1251,13 +1192,11 @@ class TimetableExtractor:
         '''
 
         #create folder to save timetables int and get name of new folder
-        destination = TimetableExtractor.create_today_folder(self)
+        folder = TimetableExtractor.create_today_folder(self)
 
         for k,v in self.timetable_dict.items():
             print (f'writing {k} to csv...')
-            k = str(k)
-            k = k.replace(':','_')
-            v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
+            v.to_csv(f'{folder}/{k}_timetable.csv', index=False)
 
 
     def save_filtered_timetables_to_csv(self, service_code):
@@ -1267,65 +1206,16 @@ class TimetableExtractor:
         The timetable dictionary can be filtered for a specific service code.
         This can also be used to filter for a specific licence number, or anything else
         in the composite key (DatasetID_ServiceCode_LineName_RevisionNumber), using free
-        text argument.
+        text arguement.
         '''
 
         #create folder to save timetables int and get name of new folder
-        destination = TimetableExtractor.create_today_folder(self)
-
+        folder = TimetableExtractor.create_today_folder(self)
 
         filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)
-
         for k, v in filtered_dict.items():
             print (f'writing {k} to csv...')
-            k = str(k)
-            k = k.replace(':','_')
-            v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
-                       
-            
-    def visualise_service_line(self, service_code):
-        '''
-       Visualise the route and timings of vehicle journeys from a specified
-       service code.
-        '''
-        
-        #filter dictionary of dataframes to just service code of interest and access df
-        filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)
-        for k, v in filtered_dict.items():
-            df = v
-
-        #df must be processed from wide to long for visualisation
-        df_melt = pd.melt(df, id_vars=['DatasetID','ServiceCode_LineName_RevisionNumber','ServiceCode','LineName','RevisionNumber','sequence_number','stop_from','CommonName','Longitude','Latitude'])
-        #remove nulls that represent where a bus doesnt stop at that stop
-        df_melt = df_melt.dropna(subset=['value'])
-        
-        #get names of service, line, revision number needed for the title of the viz
-        service_code = df_melt['ServiceCode'].iloc[0]
-        line_name = df_melt['LineName'].iloc[0]
-        revision_number = df_melt['RevisionNumber'].iloc[0]
-        
-        #create geo df 
-        geometry = [Point(xy) for xy in zip(df_melt['Longitude'], df_melt['Latitude'])]
-        gdf = GeoDataFrame(df_melt, geometry=geometry)   
-
-        #create viz
-        pio.renderers.default='browser'
-        fig = px.line_mapbox(
-            lat=gdf.geometry.y,
-            lon=gdf.geometry.x,
-            color=gdf.variable
-            ,hover_data={'Stop name':gdf.CommonName,'Stop number':gdf.sequence_number, 'time at stop':gdf.value,}
-            ,title = f'Vehicle Journeys (VJ) for: Service code - {service_code}, Line - {line_name}, File revision number - {revision_number}'
-        ).update_traces(mode="lines+markers").update_layout(
-            mapbox={
-                "style": "carto-positron",
-                "zoom": 12,
-            },
-            margin={"l": 25, "r": 25, "t": 50},
-        )
-            
-        print('\nTimetable visualised in browser!')
-        return fig.show()
+            v.to_csv(f'{folder}/{k}_timetable.csv', index=False)
 
 # =============================================================================
 #       REPORTING FUNCTIONS
@@ -1604,15 +1494,17 @@ class TimetableExtractor:
         #try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
         try:
             #import the csv file as a text string from the BODSDataExtractor package
-            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
+            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','BODSDataExtractor/ATCO_code_to_LA_lookup.csv')
             
             #wrap lookup_file string into a stringIO object so it can be read by pandas
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
-            
+            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
+            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
+
     
 
 
@@ -1633,14 +1525,14 @@ class TimetableExtractor:
         otc_la_merge.rename(columns = {'service_number':'LineName'}, inplace = True)
         
         #merge OTC service level data with BODS service level data
-        full_service_code_with_atco = otc_la_merge[['service_code','LineName','op_name','ATCO Code','in']].add_suffix('_otc').merge(bods_la_merge.add_suffix('_bods'),how='outer',right_on=['ServiceCode_bods','ATCO Code_bods'],left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
+        full_service_code_with_atco = otc_la_merge[['service_code','LineName','op_name','ATCO Code','in', 'auth_description']].add_suffix('_otc').merge(bods_la_merge.add_suffix('_bods'),how='outer',right_on=['ServiceCode_bods','ATCO Code_bods'],left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
 
         #coalesce service code and atco code cols
         full_service_code_with_atco['service_code'] = full_service_code_with_atco['service_code_otc'].combine_first(full_service_code_with_atco['ServiceCode_bods'])
         full_service_code_with_atco['atco_code'] = full_service_code_with_atco['ATCO Code_otc'].combine_first(full_service_code_with_atco['ATCO Code_bods'])
 
         #keep only necessary cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods']]
+        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods', 'auth_description_otc']]
 
         #add admin area name
         full_service_code_with_atco = full_service_code_with_atco.merge(la_lookup[['Admin Area Name associated with ATCO Code','ATCO Code']],how='left',left_on='atco_code',right_on='ATCO Code').drop_duplicates()
@@ -1656,11 +1548,11 @@ class TimetableExtractor:
         #replace nulls with string so groupby doesnt omit them
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].fillna('xxxxx')
         #groupby to concat the bods line nos together
-        full_service_code_with_atco = full_service_code_with_atco.groupby(['service_code','LineName_otc', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg({'LineName_bods' : lambda x:','.join(x)})
+        full_service_code_with_atco = full_service_code_with_atco.groupby(['service_code','LineName_otc', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','auth_description_otc','Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg({'LineName_bods' : lambda x:','.join(x)})
         #regenerate the nulls
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].replace('xxxxx',None)
         #reorder cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code']]
+        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','auth_description_otc','Admin Area Name associated with ATCO Code']]
 
         return full_service_code_with_atco
 

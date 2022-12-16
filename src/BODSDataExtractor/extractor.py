@@ -47,14 +47,22 @@ class TimetableExtractor:
         self.pull_timetable_data()
         self.otc_db = otc_db_download.fetch_otc_db()
 
-        if service_line_level == True:
+        
+        if service_line_level == True and stop_level == True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
-            self.check_for_expired_operators()
+            self.generate_timetable()
+        else:
+            pass
+            
+
+        if service_line_level == True and stop_level == False:
+            self.analytical_timetable_data()
+            self.analytical_timetable_data_analysis()
         else:
             pass
 
-        if stop_level == True:
+        if stop_level == True and  service_line_level == False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -1989,11 +1997,10 @@ class xmlDataExtractor:
   
         setoperatingdays=set(daysoperating)
         operating_day_list=list(setoperatingdays)
-        length_of_set=len(setoperatingdays)
+        
+        #adding dictionary variables and values to "day" dictionary
         
         day={}
-        
-        
         day['Monday']=1
         day['Tuesday']=2
         day['Wednesday']=3
@@ -2010,40 +2017,47 @@ class xmlDataExtractor:
             if i in day:
                 brand_new.update({i:day[i]})
         
-        print(len(brand_new))
-        
-        
         
         sortit=sorted(brand_new.items(), key=lambda x:x[1])
         
         length=len(sortit)
 
-        print(brand_new)
-        print("Boom")
-        print(sortit)
+
+        toadd=""
+        
+        consecutive=True
         
         
         
+        for i in range(length-1):
+            if sortit[i+1][1]-sortit[i][1]==1:
+                consecutive=True         
+            else:
+                consecutive=False
+
+                break
+                     
+        # if consecutive==True:
+        if length==0:
+            toadd="None"
         
-    
-        #if sortit[i+1][1]-sortit[i][1]==1:
-         #       Consecutive=True
-        #else:
-          #  Consecutive=False
-        
-        
-        if length==1:
+        elif length==1:
             toadd=sortit[0][0]
         
+        elif consecutive==False:
+            for i in range(length):
+                toadd= toadd + sortit[i][0] + ","
+                   
         else:
+           # print(sortit)
             toadd=sortit[0][0] + "-" + sortit[-1][0]
+                
+
         
-        
-        #convert to string
-        
-        print(str(toadd))
+        #print(str(toadd))
         
         toadd=[str(toadd)]
+        
         
 
 
@@ -2161,32 +2175,5 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
-
-
-###final version!!!!!!!!!!!!!!!!!!
-
-#################testing on all datasets
-#enter api key below
-
-api=os.environ.get("api")
-
-my_bus_data_object = TimetableExtractor(api_key=api,
-                                        limit=2
-                                        #Your API Key Here
-                                   #How many datasets to view
-                                  ,status = 'published' # Only view published datasets
-                                  ,service_line_level=True # True if you require Service line data 
-                                  ,stop_level=False # True if you require stop level data
-                                  )
-
-#save the extracted dataset level data to filtered_dataset_level variable
-filtered_dataset_level = my_bus_data_object.metadata
-
-#save the extracted service line level data to dataset_level variable
-filtered_service_line_level = my_bus_data_object.service_line_extract
-
-#export to csv if you wish to save this data
-filtered_service_line_level.to_csv('all_sevice_line.csv')
 
 

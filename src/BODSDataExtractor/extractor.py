@@ -262,9 +262,8 @@ class TimetableExtractor:
                             xml_output.append(public_use)
                             
                             
-                            #here
-                            OperatingDays = xmlDataExtractor.extract_OperatingDays(xml_data)
-                            xml_output.append(OperatingDays)
+                            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+                            xml_output.append(operating_days)
 
 
                             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
@@ -398,9 +397,9 @@ class TimetableExtractor:
             public_use = xmlDataExtractor.extract_public_use(xml_data)
             xml_output.append(public_use)
             
-            #here
-            OperatingDays = xmlDataExtractor.extract_OperatingDays(xml_data)
-            xml_output.append(OperatingDays)
+            
+            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+            xml_output.append(operating_days)
             
 
             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
@@ -418,12 +417,7 @@ class TimetableExtractor:
             operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
             xml_output.append(operating_period_end_date)
             
-     ###      
-            #expired=[]
-            #if operating_period_end_date>=date.today():
-             #   xml_output.append(expired)
 
-###
             schema_version = xmlDataExtractor.extract_schema_version(xml_data)
             xml_output.append(schema_version)
 
@@ -579,55 +573,8 @@ class TimetableExtractor:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
+        
         return self.service_line_extract
-
-#Evaluating if an operating date is expired
-
-  
-    def expiredStatus(value, OperatingPeriodEndDate, today):
-        
-            expValue=False
-            
-            if OperatingPeriodEndDate>=today:
-                expValue=False
-                                       
-                                       
-            elif OperatingPeriodEndDate<today:
-                expValue=True
-                                       
-            else:
-                print("Unknown")
-            
-            return(expValue)
-            
-#Adding Boolean to dataframe
-            
-    def check_for_expired_operators(self):
-        
-        expiredFlag = []
-        
-        #convert operating date
-        if self.service_line_level == True:
-            for value in self.service_line_extract['OperatingPeriodEndDate']:
-                if value==None:
-                    expiredFlag.append("No End Date")
-                    continue
-                
-                #Clean Operating Period Date    
-                OperatingPeriodEndDate= datetime.datetime.strptime(value,"%Y-%m-%d")
-                OperatingPeriodEndDate=OperatingPeriodEndDate.strftime("%Y-%m-%d")   
-                    
-                #Clean Today's Date
-                today=datetime.datetime.now()
-                today=today.strftime("%Y-%m-%d")
-                
-                    
-                expiredFlag.append(TimetableExtractor.expiredStatus(value,OperatingPeriodEndDate,today))
-                    
-        self.service_line_extract["Expired_Operator"] = expiredFlag
-        
-                            
-        return self.service_line_extract , OperatingPeriodEndDate, today
 
 
     def zip_or_xml(self, extension, url):
@@ -1378,20 +1325,6 @@ class TimetableExtractor:
 
         return red_score
     
-    #############
-    def expired_operators(self):
-        '''returns total amount of expired operators'''
-        
-        operator_expired= self.metadata.query('operating_period_end_date'>=date.today())
-        
-        expireCount=operator_expired['operator_name'].unique()
-        
-        print('Number of expired Operators')
-        print(expireCount)
-        
-        return operator_expired
-###############    
-
 
     def dq_less_than_x(self, score):
 
@@ -1970,7 +1903,7 @@ class xmlDataExtractor:
         
         return public_use
     
-    def extract_OperatingDays(self):
+    def extract_operating_days(self):
         
         '''
         Extracts the regular operating days from an xml file in a given location with a known namespace.
@@ -2178,5 +2111,58 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+
+
+
+api=os.environ.get("API")    
+
+my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
+                                  ,limit=1 # How many datasets to view
+                                  ,status = 'published' # Only view published datasets
+                                  ,service_line_level=True # True if you require Service line data 
+                                  ,stop_level=False # True if you require stop level data
+
+                                )
+
+
+#save the extracted dataset level data to filtered_dataset_level variable
+filtered_dataset_level = my_bus_data_object.metadata
+
+#save the extracted service line level data to dataset_level variable
+filtered_service_line_level = my_bus_data_object.service_line_extract
+
+#export to csv if you wish to save this data
+filtered_service_line_level.to_csv('all_sevice_line.csv')
+
+
+#from BODSDataExtractor.extractor import TimetableExtractor
+
+# my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
+#                                   ,limit=1 # commented out limit so will return all results within other parameters
+#                                   ,status = 'published' 
+#                                   ,service_line_level=True 
+#                                   ,stop_level=False 
+#                                   ,nocs=['FSCE','FGLA','FCYM'] #values must be entered in this list format - each noc within quotes, separated by comma, all within []
+#                                   ,search='First Bus' # this is actually redundant as nocs are specific to this operator, but included for demo purpose
+#                                   ,bods_compliant=True
+#                                   ,atco_code=['320', '450'] # filter to stops within just north and west yorkshire. Values must be entered in this list format - each code within quotes, separated by comma, all within []
+#                                   )
+
+# #save the extracted dataset level data to filtered_dataset_level variable
+# filtered_dataset_level = my_bus_data_object.metadata
+
+# #save the extracted service line level data to dataset_level variable
+# filtered_service_line_level = my_bus_data_object.service_line_extract
+
+# #export to csv if you wish to save this data
+# filtered_service_line_level.to_csv('filtered_service_line_level_export.csv')
+
+
+
+
+
+
+
+
 
 

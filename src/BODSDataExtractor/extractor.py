@@ -1973,29 +1973,36 @@ class xmlDataExtractor:
     def extract_OperatingDays(self):
         
         '''
-        Extracts the regular operating days from an xml file.
+        Extracts the regular operating days from an xml file in a given location with a known namespace.
+        Namespace can be found in constants.py and depends on if data is timetable or fares data
 
         
         '''
-
+        #find all text in the given xpath, return as a element object
         data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
 
         daysoperating=[]
         
         for count, value in enumerate(data):
             
-
+            #convert each element into a string
             day=str(data[count])
             
+            #only keep the element data associated with the day of the week
             changedday=day[42:52]
             
+            #split up the weekday string
             before, sep, after = changedday.partition(' ')
             
+            #keep the string data before the partition mentioned above
             changedday = before
-            
+        
             daysoperating.append(changedday)
-  
+            
+        #remove duplicates from the operating days extracted
         setoperatingdays=set(daysoperating)
+        
+        #change the operating days into a list format so they can be ordered
         operating_day_list=list(setoperatingdays)
         
         #adding dictionary variables and values to "day" dictionary
@@ -2010,58 +2017,54 @@ class xmlDataExtractor:
         day['Sunday']=7
         
         brand_new={}
-        count=0
+
         
+        #checking if the day of the week is in the above dictionary so we can sort the days
         for i in operating_day_list:
-            count=count+1
             if i in day:
                 brand_new.update({i:day[i]})
         
-        
+        #sorting the days of operation
         sortit=sorted(brand_new.items(), key=lambda x:x[1])
         
         length=len(sortit)
 
-
-        toadd=""
+        operating_days=""
         
         consecutive=True
         
         
+        #checking to see if the days in the list are not consective
         
         for i in range(length-1):
-            if sortit[i+1][1]-sortit[i][1]==1:
-                consecutive=True         
-            else:
+            if sortit[i+1][1]-sortit[i][1]!=1:
                 consecutive=False
-
                 break
+
                      
-        # if consecutive==True:
+        # if there are no days of operation entered
         if length==0:
-            toadd="None"
+            operating_days="None"
         
+        #if there is only one day of operation
         elif length==1:
-            toadd=sortit[0][0]
+            operating_days=sortit[0][0]
         
+        #if the operating days are not consecutive, they're seperated by commas
         elif consecutive==False:
             for i in range(length):
-                toadd= toadd + sortit[i][0] + ","
-                   
+                operating_days= operating_days + sortit[i][0] + ","
+                
+        #if consecutive, operating days are given as a range           
         else:
            # print(sortit)
-            toadd=sortit[0][0] + "-" + sortit[-1][0]
+            operating_days=sortit[0][0] + "-" + sortit[-1][0]
                 
 
-        
-        #print(str(toadd))
-        
-        toadd=[str(toadd)]
-        
+        operating_days=[operating_days]
         
 
-
-        return toadd
+        return operating_days
 
     def extract_service_origin(self):
         

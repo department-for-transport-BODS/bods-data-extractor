@@ -2111,34 +2111,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
-
-api=os.environ.get("API")    
-
- 
-
-my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
-                                  ,limit=1 # How many datasets to view
-                                  ,status = 'published' # Only view published datasets
-                                  ,service_line_level=True # True if you require Service line data 
-                                  ,stop_level=False # True if you require stop level data
-
- 
-
-                                )
-
- 
-
-
-#save the extracted dataset level data to filtered_dataset_level variable
-filtered_dataset_level = my_bus_data_object.metadata
-
- 
-
-#save the extracted service line level data to dataset_level variable
-filtered_service_line_level = my_bus_data_object.service_line_extract
-
- 
-
-#export to csv if you wish to save this data
-filtered_service_line_level.to_csv('all_sevice_line.csv')

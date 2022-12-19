@@ -2113,8 +2113,9 @@ class xmlDataExtractor:
         return unique_atco_first_3_letters
 
 
-
 api=os.environ.get("API")    
+
+ 
 
 my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
                                   ,limit=1 # How many datasets to view
@@ -2122,47 +2123,22 @@ my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
                                   ,service_line_level=True # True if you require Service line data 
                                   ,stop_level=False # True if you require stop level data
 
+ 
+
                                 )
+
+ 
 
 
 #save the extracted dataset level data to filtered_dataset_level variable
 filtered_dataset_level = my_bus_data_object.metadata
 
+ 
+
 #save the extracted service line level data to dataset_level variable
 filtered_service_line_level = my_bus_data_object.service_line_extract
 
+ 
+
 #export to csv if you wish to save this data
 filtered_service_line_level.to_csv('all_sevice_line.csv')
-
-
-#from BODSDataExtractor.extractor import TimetableExtractor
-
-# my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
-#                                   ,limit=1 # commented out limit so will return all results within other parameters
-#                                   ,status = 'published' 
-#                                   ,service_line_level=True 
-#                                   ,stop_level=False 
-#                                   ,nocs=['FSCE','FGLA','FCYM'] #values must be entered in this list format - each noc within quotes, separated by comma, all within []
-#                                   ,search='First Bus' # this is actually redundant as nocs are specific to this operator, but included for demo purpose
-#                                   ,bods_compliant=True
-#                                   ,atco_code=['320', '450'] # filter to stops within just north and west yorkshire. Values must be entered in this list format - each code within quotes, separated by comma, all within []
-#                                   )
-
-# #save the extracted dataset level data to filtered_dataset_level variable
-# filtered_dataset_level = my_bus_data_object.metadata
-
-# #save the extracted service line level data to dataset_level variable
-# filtered_service_line_level = my_bus_data_object.service_line_extract
-
-# #export to csv if you wish to save this data
-# filtered_service_line_level.to_csv('filtered_service_line_level_export.csv')
-
-
-
-
-
-
-
-
-
-

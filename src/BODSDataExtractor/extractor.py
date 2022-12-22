@@ -573,8 +573,68 @@ class TimetableExtractor:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-        
+            self.check_for_expired_operators()
         return self.service_line_extract
+
+
+
+    def expired_status(date, end_date, today):
+        """
+        Based on the expiry date, a boolean value is assigned to the 'expired' variable, this is
+        then returned back to the 'check_for_expired_operators' function.
+        """        
+        
+        expired=False
+        
+        #If the end date is greater or equal to today's date, if so expiry is False 
+        if end_date>=today:
+            expired=False
+                                       
+        #If the end date is less than today's date, if so expiry is True                               
+        elif end_date<today:
+            expired=True
+                                       
+        else:
+            print("Unknown")
+            
+        return(expired)
+            
+            
+    def check_for_expired_operators(self):
+
+        """
+        Looks at the 'OperatingPeriodEndDate' column. For every date that's been entered, it 
+        is converted to a "datetime" object and passed on to the expired_status functiom to 
+        determine expiry . A new cloumn is then created and inserted after the OperatingPeriodEndDate 
+        column showing expiry status.
+        """
+        
+        expiredFlag = []
+        
+        #convert operating date
+        if self.service_line_level == True:
+            for date in self.service_line_extract['OperatingPeriodEndDate']:
+                if date==None:
+                    expiredFlag.append("No End Date")
+                    continue
+                
+                #Clean Operating Period Date    
+                end_date= datetime.datetime.strptime(date,"%Y-%m-%d")
+                end_date=end_date.strftime("%Y-%m-%d")   
+                    
+                #Clean Today's Date
+                today=datetime.datetime.now()
+                today=today.strftime("%Y-%m-%d")
+                
+                    
+                expiredFlag.append(TimetableExtractor.expired_status(date,end_date,today))
+              
+        #Column is inserted after the operating end date column,        
+        self.service_line_extract.insert( loc=24, column="Expired_Operator", value=expiredFlag)
+        
+                            
+        return self.service_line_extract , end_date, today
+
 
 
     def zip_or_xml(self, extension, url):

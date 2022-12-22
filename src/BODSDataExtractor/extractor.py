@@ -571,6 +571,7 @@ class TimetableExtractor:
         
         if self.stop_level == True:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
+            self.check_for_expired_operators()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
             self.check_for_expired_operators()

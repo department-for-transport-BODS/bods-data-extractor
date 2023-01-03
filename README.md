@@ -102,7 +102,7 @@ https://www.anaconda.com/distribution/
 
 Once this is installed, open Anaconda Navigator GUI and ensure 'Spyder' is installed, before launching it. Here you will be able to run code from the examples below, in order to make use of this package's functionalities. 
 
-Please check this is inline with your organisation's policy before installing)
+Please check this is inline with your organisation's policy before installing.
 
 ### Installation
 

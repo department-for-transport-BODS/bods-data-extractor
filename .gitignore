@@ -7,5 +7,6 @@ _test/
 .DS_Store
 *.pyc
 dist/
+BODSDataExtractor.egg-info/
 .env
 ap_sandbox.py

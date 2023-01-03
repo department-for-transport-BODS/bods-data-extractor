@@ -241,6 +241,9 @@ my_bus_data_object.save_all_timetables_to_csv()
 #or can filter to filter timetable results to a specfic licence number of service code (saves in downloads directory)
 my_bus_data_object.save_filtered_timetables_to_csv('PC0001838:41')
 
+#visualise a particular service line on an interactive map
+my_bus_data_object.visualise_service_line('PC0001838:41')
+
 ```
 ### Expected run times and performance
 

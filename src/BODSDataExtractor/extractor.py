@@ -23,6 +23,11 @@ import datetime
 from collections import Counter
 import importlib.resources
 
+from shapely.geometry import Point
+from geopandas import GeoDataFrame
+import plotly.express as px
+import plotly.io as pio
+
 
 class TimetableExtractor:
 
@@ -42,13 +47,22 @@ class TimetableExtractor:
         self.pull_timetable_data()
         self.otc_db = otc_db_download.fetch_otc_db()
 
-        if service_line_level == True:
+        
+        if service_line_level == True and stop_level == True:
+            self.analytical_timetable_data()
+            self.analytical_timetable_data_analysis()
+            self.generate_timetable()
+        else:
+            pass
+            
+
+        if service_line_level == True and stop_level == False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
         else:
             pass
 
-        if stop_level == True:
+        if stop_level == True and  service_line_level == False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -246,6 +260,10 @@ class TimetableExtractor:
 
                             public_use = xmlDataExtractor.extract_public_use(xml_data)
                             xml_output.append(public_use)
+                            
+                            
+                            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+                            xml_output.append(operating_days)
 
 
                             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
@@ -313,11 +331,11 @@ class TimetableExtractor:
         #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
         if self.stop_level == True:
             output_df = pd.DataFrame(output
-                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
+                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
                                  )
         else:
             output_df = pd.DataFrame(output
-                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
+                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
                                      )
         return output_df
 
@@ -378,7 +396,11 @@ class TimetableExtractor:
 
             public_use = xmlDataExtractor.extract_public_use(xml_data)
             xml_output.append(public_use)
-
+            
+            
+            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+            xml_output.append(operating_days)
+            
 
             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
             xml_output.append(service_origin)
@@ -394,7 +416,7 @@ class TimetableExtractor:
 
             operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
             xml_output.append(operating_period_end_date)
-
+            
 
             schema_version = xmlDataExtractor.extract_schema_version(xml_data)
             xml_output.append(schema_version)
@@ -432,9 +454,9 @@ class TimetableExtractor:
         output_df = pd.DataFrame(xml_output).T
 
         if self.stop_level == True:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
+            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
         else:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
+            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
 
         return output_df
 
@@ -501,6 +523,7 @@ class TimetableExtractor:
                                                                  ,'OperatorCode'
                                                                  ,'ServiceCode'
                                                                  ,'PublicUse'
+                                                                 ,'OperatingDays'
                                                                  ,'Origin'
                                                                  ,'Destination'
                                                                  ,'OperatingPeriodStartDate'
@@ -544,11 +567,13 @@ class TimetableExtractor:
         '''
 
         #conditional logic required, as json cols dont exist if stop_level parameter != True
+
+        
         if self.stop_level == True:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-
+        
         return self.service_line_extract
 
 
@@ -956,7 +981,7 @@ class TimetableExtractor:
         url = "https://naptan.api.dft.gov.uk/v1/access-nodes?&dataFormat=csv"
 
         r = requests.get(url).content
-        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')))
+        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')), low_memory=False)
 
         #filter results to those needed (just lat and long)
         naptan = naptan[['ATCOCode','CommonName','Longitude','Latitude']]
@@ -1276,7 +1301,51 @@ class TimetableExtractor:
             k = str(k)
             k = k.replace(':','_')
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
+            
+            
+    def visualise_service_line(self, service_code):
+        '''
+       Visualise the route and timings of vehicle journeys from a specified
+       service code.
+        '''
+        
+        #filter dictionary of dataframes to just service code of interest and access df
+        filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)
+        for k, v in filtered_dict.items():
+            df = v
 
+        #df must be processed from wide to long for visualisation
+        df_melt = pd.melt(df, id_vars=['DatasetID','ServiceCode_LineName_RevisionNumber','ServiceCode','LineName','RevisionNumber','sequence_number','stop_from','CommonName','Longitude','Latitude'])
+        #remove nulls that represent where a bus doesnt stop at that stop
+        df_melt = df_melt.dropna(subset=['value'])
+        
+        #get names of service, line, revision number needed for the title of the viz
+        service_code = df_melt['ServiceCode'].iloc[0]
+        line_name = df_melt['LineName'].iloc[0]
+        revision_number = df_melt['RevisionNumber'].iloc[0]
+        
+        #create geo df 
+        geometry = [Point(xy) for xy in zip(df_melt['Longitude'], df_melt['Latitude'])]
+        gdf = GeoDataFrame(df_melt, geometry=geometry)   
+
+        #create viz
+        pio.renderers.default='browser'
+        fig = px.line_mapbox(
+            lat=gdf.geometry.y,
+            lon=gdf.geometry.x,
+            color=gdf.variable
+            ,hover_data={'Stop name':gdf.CommonName,'Stop number':gdf.sequence_number, 'time at stop':gdf.value,}
+            ,title = f'Vehicle Journeys (VJ) for: Service code - {service_code}, Line - {line_name}, File revision number - {revision_number}'
+        ).update_traces(mode="lines+markers").update_layout(
+            mapbox={
+                "style": "carto-positron",
+                "zoom": 12,
+            },
+            margin={"l": 25, "r": 25, "t": 50},
+        )
+            
+        print('\nTimetable visualised in browser!')
+        return fig.show()
 
 # =============================================================================
 #       REPORTING FUNCTIONS
@@ -1299,7 +1368,7 @@ class TimetableExtractor:
         print(*datasets, sep = ', ')
 
         return red_score
-
+    
 
     def dq_less_than_x(self, score):
 
@@ -1877,6 +1946,102 @@ class xmlDataExtractor:
         public_use = [i.text for i in data]
         
         return public_use
+    
+    def extract_operating_days(self):
+        
+        '''
+        Extracts the regular operating days from an xml file in a given location with a known namespace.
+        Namespace can be found in constants.py and depends on if data is timetable or fares data
+
+        
+        '''
+        #find all text in the given xpath, return as a element object
+        data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+
+        daysoperating=[]
+        
+        for count, value in enumerate(data):
+            
+            #convert each element into a string
+            day=str(data[count])
+            
+            #only keep the element data associated with the day of the week
+            changedday=day[42:52]
+            
+            #split up the weekday string
+            before, sep, after = changedday.partition(' ')
+            
+            #keep the string data before the partition mentioned above
+            changedday = before
+        
+            daysoperating.append(changedday)
+            
+        #remove duplicates from the operating days extracted
+        setoperatingdays=set(daysoperating)
+        
+        #change the operating days into a list format so they can be ordered
+        operating_day_list=list(setoperatingdays)
+        
+        #adding dictionary variables and values to "day" dictionary
+        
+        day={}
+        day['Monday']=1
+        day['Tuesday']=2
+        day['Wednesday']=3
+        day['Thursday']=4
+        day['Friday']=5
+        day['Saturday']=6
+        day['Sunday']=7
+        
+        brand_new={}
+
+        
+        #checking if the day of the week is in the above dictionary so we can sort the days
+        for i in operating_day_list:
+            if i in day:
+                brand_new.update({i:day[i]})
+        
+        #sorting the days of operation
+        sortit=sorted(brand_new.items(), key=lambda x:x[1])
+        
+        length=len(sortit)
+
+        operating_days=""
+        
+        consecutive=True
+        
+        
+        #checking to see if the days in the list are not consective
+        
+        for i in range(length-1):
+            if sortit[i+1][1]-sortit[i][1]!=1:
+                consecutive=False
+                break
+
+                     
+        # if there are no days of operation entered
+        if length==0:
+            operating_days="None"
+        
+        #if there is only one day of operation
+        elif length==1:
+            operating_days=sortit[0][0]
+        
+        #if the operating days are not consecutive, they're seperated by commas
+        elif consecutive==False:
+            for i in range(length):
+                operating_days= operating_days + sortit[i][0] + ","
+                
+        #if consecutive, operating days are given as a range           
+        else:
+           # print(sortit)
+            operating_days=sortit[0][0] + "-" + sortit[-1][0]
+                
+
+        operating_days=[operating_days]
+        
+
+        return operating_days
 
     def extract_service_origin(self):
         
@@ -1938,14 +2103,8 @@ class xmlDataExtractor:
         operating_period_end_date = [i.text if len(i.text) >0 else 'No Data' for i in data]
         
         return operating_period_end_date
-
-        #returns 'no data' if this is blank as many are empty
-        #if len(operating_period_end_date) > 0:
-            
-            #return operating_period_end_date
-        
-        #else:
-            #return ['No Data']
+    
+             
        
     def extract_schema_version(self):
         
@@ -1996,8 +2155,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
-
-    
-
-

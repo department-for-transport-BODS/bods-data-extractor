@@ -8,3 +8,5 @@ _test/
 *.pyc
 dist/
 BODSDataExtractor.egg-info/
+.env
+ap_sandbox.py

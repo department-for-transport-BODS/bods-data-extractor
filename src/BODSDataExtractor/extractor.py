@@ -594,7 +594,8 @@ class TimetableExtractor:
         #If the end date is less than today's date, if so expiry is True                               
         elif end_date<today:
             expired=True
-                                       
+         
+        #If the date format is not recognised for the "end_date" the above conditions won't be set to true leaving us with an unknown expiry
         else:
             print("Unknown")
             

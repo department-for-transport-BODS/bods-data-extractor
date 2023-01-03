@@ -597,7 +597,7 @@ class TimetableExtractor:
          
         #If the date format is not recognised for the "end_date" the above conditions won't be set to true leaving us with an unknown expiry
         else:
-            print("Unknown")
+            print("Date format not recognised, please check the dates in the 'OperatingPeriodEndDate' cloumn" )
             
         return(expired)
             

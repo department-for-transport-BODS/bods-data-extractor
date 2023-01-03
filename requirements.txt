@@ -156,7 +156,7 @@ Rtree==0.9.7
 scipy==1.8.1
 seaborn==0.11.2
 Send2Trash==1.8.0
-setuptools==61.2.0
+setuptools==65.5.1
 Shapely==1.8.2
 sip==4.19.13
 six==1.16.0

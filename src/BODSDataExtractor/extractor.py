@@ -1686,15 +1686,16 @@ class TimetableExtractor:
         #try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
         try:
             #import the csv file as a text string from the BODSDataExtractor package
-            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
-            
+            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor',
+                                                             'BODSDataExtractor/ATCO_code_to_LA_lookup.csv')
             #wrap lookup_file string into a stringIO object so it can be read by pandas
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
-            
+            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
+            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
     
 
 
@@ -1715,14 +1716,19 @@ class TimetableExtractor:
         otc_la_merge.rename(columns = {'service_number':'LineName'}, inplace = True)
         
         #merge OTC service level data with BODS service level data
-        full_service_code_with_atco = otc_la_merge[['service_code','LineName','op_name','ATCO Code','in']].add_suffix('_otc').merge(bods_la_merge.add_suffix('_bods'),how='outer',right_on=['ServiceCode_bods','ATCO Code_bods'],left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
+        full_service_code_with_atco = otc_la_merge[
+            ['service_code', 'LineName', 'op_name', 'ATCO Code', 'in', 'auth_description']].add_suffix('_otc').merge(
+            bods_la_merge.add_suffix('_bods'), how='outer', right_on=['ServiceCode_bods', 'ATCO Code_bods'],
+            left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
 
         #coalesce service code and atco code cols
         full_service_code_with_atco['service_code'] = full_service_code_with_atco['service_code_otc'].combine_first(full_service_code_with_atco['ServiceCode_bods'])
         full_service_code_with_atco['atco_code'] = full_service_code_with_atco['ATCO Code_otc'].combine_first(full_service_code_with_atco['ATCO Code_bods'])
 
         #keep only necessary cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods']]
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc']]
 
         #add admin area name
         full_service_code_with_atco = full_service_code_with_atco.merge(la_lookup[['Admin Area Name associated with ATCO Code','ATCO Code']],how='left',left_on='atco_code',right_on='ATCO Code').drop_duplicates()
@@ -1738,12 +1744,16 @@ class TimetableExtractor:
         #replace nulls with string so groupby doesnt omit them
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].fillna('xxxxx')
         #groupby to concat the bods line nos together
-        full_service_code_with_atco = full_service_code_with_atco.groupby(['service_code','LineName_otc', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg({'LineName_bods' : lambda x:','.join(x)})
+        full_service_code_with_atco = full_service_code_with_atco.groupby(
+            ['service_code', 'LineName_otc', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc', 'in_bods',
+             'auth_description_otc', 'Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg(
+            {'LineName_bods': lambda x: ','.join(x)})
         #regenerate the nulls
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].replace('xxxxx',None)
         #reorder cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code']]
-
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc', 'Admin Area Name associated with ATCO Code']]
         return full_service_code_with_atco
 
     def services_on_bods_or_otc_by_area_mi(self):
@@ -1781,16 +1791,18 @@ class TimetableExtractor:
         #try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
         try:
             #import the csv file as a text string from the BODSDataExtractor package
-            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
-            
+            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor',
+                                                             'BODSDataExtractor/ATCO_code_to_LA_lookup.csv')
             #wrap lookup_file string into a stringIO object so it can be read by pandas
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
+
+            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
             
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
-    
+            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
 
 
         #fetch latest version of OTC database
@@ -1810,14 +1822,19 @@ class TimetableExtractor:
         otc_la_merge.rename(columns = {'service_number':'LineName'}, inplace = True)
         
         #merge OTC service level data with BODS service level data
-        full_service_code_with_atco = otc_la_merge[['service_code','LineName','op_name','ATCO Code','in']].add_suffix('_otc').merge(bods_la_merge.add_suffix('_bods'),how='outer',right_on=['ServiceCode_bods','ATCO Code_bods'],left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
+        full_service_code_with_atco = otc_la_merge[
+            ['service_code', 'LineName', 'op_name', 'ATCO Code', 'in', 'auth_description']].add_suffix('_otc').merge(
+            bods_la_merge.add_suffix('_bods'), how='outer', right_on=['ServiceCode_bods', 'ATCO Code_bods'],
+            left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
 
         #coalesce service code and atco code cols
         full_service_code_with_atco['service_code'] = full_service_code_with_atco['service_code_otc'].combine_first(full_service_code_with_atco['ServiceCode_bods'])
         full_service_code_with_atco['atco_code'] = full_service_code_with_atco['ATCO Code_otc'].combine_first(full_service_code_with_atco['ATCO Code_bods'])
 
         #keep only necessary cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods']]
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc']]
 
         #add admin area name
         full_service_code_with_atco = full_service_code_with_atco.merge(la_lookup[['Admin Area Name associated with ATCO Code','ATCO Code']],how='left',left_on='atco_code',right_on='ATCO Code').drop_duplicates()
@@ -1836,12 +1853,16 @@ class TimetableExtractor:
         #replace nulls with string so groupby doesnt omit them
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].fillna('xxxxx')
         #groupby to concat the bods line nos together
-        full_service_code_with_atco = full_service_code_with_atco.groupby(['service_code','LineName_otc', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg({'LineName_bods' : lambda x:','.join(x)})
+        full_service_code_with_atco = full_service_code_with_atco.groupby(
+            ['service_code', 'LineName_otc', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc', 'in_bods',
+             'auth_description_otc', 'Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg(
+            {'LineName_bods': lambda x: ','.join(x)})
         #regenerate the nulls
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].replace('xxxxx',None)
         #reorder cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code']]
-
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc', 'Admin Area Name associated with ATCO Code']]
         return full_service_code_with_atco
 
     def services_on_bods_or_otc_by_area_mi_just_otc(self):

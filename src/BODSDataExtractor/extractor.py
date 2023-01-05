@@ -28,6 +28,7 @@ from geopandas import GeoDataFrame
 import plotly.express as px
 import plotly.io as pio
 
+import sys
 
 class TimetableExtractor:
 
@@ -46,8 +47,8 @@ class TimetableExtractor:
         self.stop_level = stop_level
         self.pull_timetable_data()
         self.otc_db = otc_db_download.fetch_otc_db()
-
         
+     
         if service_line_level == True and stop_level == True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
@@ -68,6 +69,33 @@ class TimetableExtractor:
             self.generate_timetable()
 
         # self.service_line_extract = service_line_extract
+        
+        
+        
+    def check_api_response(self, response,j1):
+        
+        
+        #if response is less than 4, no data has been pulled
+        
+        if len(j1)<4 :
+            print("_____________________________________")
+            print("Error")
+            #we are extracting the status code (key) and the reason (value) 
+            
+            
+            for key,value in j1.items():
+                print(key, ':', value)
+            print("_____________________________________")
+            sys.exit()
+            
+            
+        else:
+            print("200 OK")
+            
+            print(j1)
+        
+        
+        
 
 
     def create_zip_level_timetable_df(self, response):
@@ -75,8 +103,14 @@ class TimetableExtractor:
         """This function takes the json api response file 
         and returns it as a pandas dataframe"""
 
+        
         j = response.json()
-        j1 = json.loads(j)
+        j1 = json.loads(j)    
+        
+        #check the json api response file
+        self.check_api_response(response,j1)
+        
+        
         df = pd.json_normalize(j1['results'])
         return df
 

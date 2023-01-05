@@ -77,7 +77,7 @@ class TimetableExtractor:
         
         #if response is less than 4, no data has been pulled
         
-        if len(j1)<4 :
+        if len(j1)<4:
             print("_____________________________________")
             print("Error")
             #we are extracting the status code (key) and the reason (value) 
@@ -88,12 +88,18 @@ class TimetableExtractor:
             print("_____________________________________")
             sys.exit()
             
+        #if the api key is valid but the dataset is empty
+        elif j1.get("results")==[]:
+            print("_____________________________________")
+            print("Error")
+            print("status_code : 200 OK")
+            print('reason : {"detail":"Empty Dataset"}')
+            sys.exit()
             
+            
+       #continue as normal if the API key is valid and it's not an empty dataset     
         else:
             print("200 OK")
-            
-            print(j1)
-        
         
         
 
@@ -2251,3 +2257,4 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+    

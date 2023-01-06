@@ -78,23 +78,24 @@ class TimetableExtractor:
         #if response is less than 4, no data has been pulled
         
         if len(j1)<4:
-            print("_____________________________________")
-            print("Error")
+            message=""
             #we are extracting the status code (key) and the reason (value) 
             
-            
+            #checking through items in json api response file dictionary
             for key,value in j1.items():
-                print(key, ':', value)
-            print("_____________________________________")
-            sys.exit()
+                content=str(key) +" : "+ str(value)
+                
+
+                message="\n"+message+str(content)+"\n"
+                
+                
+            raise ValueError(message)
+
             
         #if the api key is valid but the dataset is empty
         elif j1.get("results")==[]:
-            print("_____________________________________")
-            print("Error")
-            print("status_code : 200 OK")
-            print('reason : {"detail":"Empty Dataset"}')
-            sys.exit()
+            
+            raise ValueError('\n status_code : 200 OK \n reason : {"Empty Dataset"}')
             
             
        #continue as normal if the API key is valid and it's not an empty dataset     
@@ -652,7 +653,8 @@ class TimetableExtractor:
         """
         
         expiredFlag = []
-        
+        end_date=""
+        today=""
         #convert operating date
         if self.service_line_level == True:
             for date in self.service_line_extract['OperatingPeriodEndDate']:
@@ -2258,3 +2260,4 @@ class xmlDataExtractor:
         
         return unique_atco_first_3_letters
     
+ 

@@ -28,7 +28,7 @@ from geopandas import GeoDataFrame
 import plotly.express as px
 import plotly.io as pio
 
-import sys
+
 
 class TimetableExtractor:
 

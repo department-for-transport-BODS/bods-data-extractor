@@ -89,6 +89,7 @@ This project was created to lower the barrier to entry for analysis of UK Bus Op
 There are a number of different documents and data standards that are used as part of the Bus Open Data Service. Please find these links below: 
 
 - [Bus Services Act 2017](https://www.legislation.gov.uk/ukpga/2017/21/introduction/enacted)
+- [National Bus Strategy](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/980227/DfT-Bus-Back-Better-national-bus-strategy-for-England.pdf)
 - [Timetables Data Standard](https://pti.org.uk/system/files/files/TransXChange_UK_PTI_Profile_v1.1.A.pdf)
 - [Versioning in Timetables](https://pti.org.uk/system/files/files/TransXChange%20UK%20PTI%20Profile%20-%20Versioning%20Application%20Note%20v1.0.pdf)
 - [Location Data Standard](https://www.gov.uk/government/publications/technical-guidance-publishing-location-data-using-the-bus-open-data-service-siri-vm/technical-guidance-siri-vm#the-siri-vm-standard)

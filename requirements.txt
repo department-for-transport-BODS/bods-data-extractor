@@ -21,7 +21,7 @@ bods-client==0.9.1
 Bottleneck==1.3.4
 brotlipy==0.7.0
 build==0.8.0
-certifi==2022.5.18.1
+certifi==2022.12.7
 cffi==1.15.0
 chardet==4.0.0
 charset-normalizer==2.0.12

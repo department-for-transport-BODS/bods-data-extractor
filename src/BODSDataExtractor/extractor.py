@@ -1692,10 +1692,8 @@ class TimetableExtractor:
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
-            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
-            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
     
 
 
@@ -1798,11 +1796,11 @@ class TimetableExtractor:
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
 
-            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
+
             
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
-            la_lookup['ATCO Code'] = la_lookup['ATCO Code'].astype(str)
+
 
 
         #fetch latest version of OTC database

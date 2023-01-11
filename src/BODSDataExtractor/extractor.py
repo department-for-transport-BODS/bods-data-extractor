@@ -73,12 +73,15 @@ class TimetableExtractor:
         
         
     def check_api_response(self, response,j1):
+    
+        #initialise a blank message to append to
+        message=""
         
         
         #if response is less than 4, no data has been pulled
         
         if len(j1)<4:
-            message=""
+            
             #we are extracting the status code (key) and the reason (value) 
             
             #checking through items in json api response file dictionary

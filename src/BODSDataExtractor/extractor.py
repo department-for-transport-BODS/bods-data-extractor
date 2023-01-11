@@ -635,7 +635,7 @@ class TimetableExtractor:
         self.service_line_extract.insert( loc=24, column="Expired_Operator", value=expiredFlag)
         
                             
-        return self.service_line_extract , end_date, today
+        return self.service_line_extract
 
 
 

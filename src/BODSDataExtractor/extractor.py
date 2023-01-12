@@ -72,39 +72,35 @@ class TimetableExtractor:
         
         
         
-    def check_api_response(self, response,j1):
-    
-        #initialise a blank message to append to
+    def check_api_response(self, response, apiResponse):
+
+        #initialise empty message to be appended to
         message=""
-        
-        
-        #if response is less than 4, no data has been pulled
-        
-        if len(j1)<4:
-            
+
+        if apiResponse==False:
+
+            if response.get("results")==[]:
+
+                response={'status_code': 404, 'reason': '{"Empty Dataset"}'}
+     
+
             #we are extracting the status code (key) and the reason (value) 
-            
-            #checking through items in json api response file dictionary
-            for key,value in j1.items():
-                content=str(key) +" : "+ str(value)
+
+            #checking through items in the api response dictionary
+            for key,value in response.items():
                 
+                content=str(key) +" : "+ str(value)
 
                 message="\n"+message+str(content)+"\n"
-                
-                
+
             raise ValueError(message)
 
-            
-        #if the api key is valid but the dataset is empty
-        elif j1.get("results")==[]:
-            
-            raise ValueError('\n status_code : 200 OK \n reason : {"Empty Dataset"}')
-            
-            
-       #continue as normal if the API key is valid and it's not an empty dataset     
-        else:
-            print("200 OK")
-        
+
+        # #continue as normal if the API key is valid and it's not an empty dataset  
+        elif apiResponse==True:
+            print("status_code :", response.status_code)
+            print("reason :", response.reason)
+
         
 
 
@@ -117,9 +113,12 @@ class TimetableExtractor:
         j = response.json()
         j1 = json.loads(j)    
         
-        #check the json api response file
-        self.check_api_response(response,j1)
-        
+        #check the api response message
+        if len(j1)<4 or j1.get("results")==[]:
+            apiResponse=False
+            self.check_api_response(j1, apiResponse)
+
+
         
         df = pd.json_normalize(j1['results'])
         return df
@@ -246,6 +245,11 @@ class TimetableExtractor:
 
         print(f"Fetching zip file from {url} in metadata table...\n")
         response = requests.get(url)
+        
+        
+        #if the api response is valid
+        apiResponse=True
+        self.check_api_response(response, apiResponse)
 
         #unizp the zipfile
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
@@ -2262,5 +2266,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-    
- 

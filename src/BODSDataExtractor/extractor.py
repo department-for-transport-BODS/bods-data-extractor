@@ -646,8 +646,7 @@ class TimetableExtractor:
         """
         
         expiredFlag = []
-        end_date=""
-        today=""
+
         #convert operating date
         if self.service_line_level == True:
             for date in self.service_line_extract['OperatingPeriodEndDate']:

@@ -1042,11 +1042,9 @@ class TimetableExtractor:
         # url = f"https://naptan.api.dft.gov.uk/v1/access-nodes?atcoAreaCodes={atcos}&dataFormat=csv"
         url = "https://naptan.api.dft.gov.uk/v1/access-nodes?&dataFormat=csv"
 
+        # filter results within call to those needed (just lat and long)
         r = requests.get(url).content
-        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')), low_memory=False)
-
-        #filter results to those needed (just lat and long)
-        naptan = naptan[['ATCOCode','CommonName','Longitude','Latitude']]
+        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')), usecols=['ATCOCode','CommonName','Longitude','Latitude'])
 
         return naptan
 

@@ -29,13 +29,11 @@ import plotly.express as px
 import plotly.io as pio
 
 
-
 class TimetableExtractor:
 
 
     error_list = []
     
-
     def __init__(self, api_key, limit=10000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False):
         self.api_key = api_key
         self.limit = limit
@@ -50,8 +48,6 @@ class TimetableExtractor:
         self.otc_db = otc_db_download.fetch_otc_db()
         
         
-        
-     
         if service_line_level == True and stop_level == True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
@@ -72,9 +68,7 @@ class TimetableExtractor:
             self.generate_timetable()
 
         # self.service_line_extract = service_line_extract
-        
-        
-        
+     
     def check_api_response(self, response):
 
         #initialise empty message to be appended to
@@ -82,17 +76,12 @@ class TimetableExtractor:
 
 
         if response.get("results")==[]:
-
             response={'status_code': 400, 'reason': '{"Invalid Entry in data-object"}'}
-     
-
             #we are extracting the status code (key) and the reason (value) 
 
             #checking through items in the api response dictionary
-        for key,value in response.items():
-                
+        for key,value in response.items():          
             content=str(key) +" : "+ str(value)
-
             message="\n"+message+str(content)+"\n"
 
         raise ValueError(message)
@@ -110,11 +99,9 @@ class TimetableExtractor:
         j = response.json()
         j1 = json.loads(j)    
         
-        #check the json api response message
-        if len(j1)<4 or j1.get("results")==[]:
-            
+        #check if the json api response message has a valid length and isn't empty
+        if len(j1)<4 or j1.get("results")==[]:  
             self.check_api_response(j1)
-
 
         df = pd.json_normalize(j1['results'])
         return df

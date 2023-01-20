@@ -28,12 +28,13 @@ from geopandas import GeoDataFrame
 import plotly.express as px
 import plotly.io as pio
 
+import sys
 
 class TimetableExtractor:
 
 
     error_list = []
-    
+
     def __init__(self, api_key, limit=10000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False):
         self.api_key = api_key
         self.limit = limit
@@ -47,7 +48,7 @@ class TimetableExtractor:
         self.pull_timetable_data()
         self.otc_db = otc_db_download.fetch_otc_db()
         
-        
+     
         if service_line_level == True and stop_level == True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
@@ -68,41 +69,66 @@ class TimetableExtractor:
             self.generate_timetable()
 
         # self.service_line_extract = service_line_extract
-     
-    def check_api_response(self, response):
-
+        
+        
+        
+    def check_api_response(self, response, apiResponse):
+        
         #initialise empty message to be appended to
         message=""
 
-
-        if response.get("results")==[]:
-            response={'status_code': 400, 'reason': '{"Invalid Entry in data-object"}'}
-            #we are extracting the status code (key) and the reason (value) 
-
-            #checking through items in the api response dictionary
-        for key,value in response.items():          
-            content=str(key) +" : "+ str(value)
-            message="\n"+message+str(content)+"\n"
-
-        raise ValueError(message)
-
         
+        if apiResponse==False:
+     
+            if response.get("results")==[]:
+                
+                response={'status_code': 404, 'reason': '{"Empty Dataset"}'}
 
+                
+            
+            #we are extracting the status code (key) and the reason (value) 
+            
+            #checking through items in the api response dictionary
+            for key,value in response.items():
+                content=str(key) +" : "+ str(value)
+                
+                message="\n"+message+str(content)+"\n"
+                
+            raise ValueError(message)
+        
+        
+        # #continue as normal if the API key is valid and it's not an empty dataset  
+        elif apiResponse==True:
+            
+            print("status_code :", response.status_code)
+            print("reason :", response.reason)
+            
+        else:
+            pass
+            
 
     def create_zip_level_timetable_df(self, response):
 
         """This function takes the json api response file 
         and returns it as a pandas dataframe"""
-        
-        #response = requests.head(url)
+
         
         j = response.json()
-        j1 = json.loads(j)    
+        j1 = json.loads(j)   
         
-        #check if the json api response message has a valid length and isn't empty
-        if len(j1)<4 or j1.get("results")==[]:  
-            self.check_api_response(j1)
-
+        #checking the json api response to check the length of the response is invalid or we have an empty dataset
+        
+        if len(j1)<4 or j1.get("results")==[] :
+            
+        
+            apiResponse=False
+            
+            self.check_api_response(j1, apiResponse)
+        
+        else:
+            pass
+        
+        
         df = pd.json_normalize(j1['results'])
         return df
 
@@ -110,7 +136,6 @@ class TimetableExtractor:
         '''downloads a file from a url and returns the extension'''
 
         response = requests.head(url)
-        
         try:
             filename = response.headers["Content-Disposition"].split('"')[1]
             extension = filename.split('.')[-1]
@@ -228,8 +253,14 @@ class TimetableExtractor:
         output = []
 
         print(f"Fetching zip file from {url} in metadata table...\n")
+        
+
+        
         response = requests.get(url)
         
+        #if the api response is valid
+        apiResponse=True
+        self.check_api_response(response, apiResponse)
 
         #unizp the zipfile
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
@@ -375,9 +406,12 @@ class TimetableExtractor:
 
         xml_output = []
         print(f"Fetching xml file from {url} in metadata table...\n")
+        
+        
         resp = requests.get(url)
+        
+        
         resp.encoding = 'utf-8-sig'
-
 
         #save the filea as an xml then reopen it to parse, this can and should be optimised 
         with open('temp.xml', 'w', encoding = 'utf-8') as file:
@@ -487,7 +521,7 @@ class TimetableExtractor:
         else:
             output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
 
-        return output_df
+        return output_df, resp
 
 
 
@@ -541,11 +575,6 @@ class TimetableExtractor:
 
 
         zip_xml_table = pd.concat([xml_table, zip_table])
-        
-        if zip_xml_table.empty==True:
-            response={'status_code': 200, 'reason': '{"OK"}' , 'Cause': 'Empty Dataframe'}
-            self.check_api_response(response)
-        
 
         self.service_line_extract_with_stop_level_json = master_table.merge(zip_xml_table, how = 'outer', on = 'URL')
 
@@ -646,7 +675,9 @@ class TimetableExtractor:
         """
         
         expiredFlag = []
+        
 
+        
         #convert operating date
         if self.service_line_level == True:
             for date in self.service_line_extract['OperatingPeriodEndDate']:
@@ -2251,4 +2282,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-  

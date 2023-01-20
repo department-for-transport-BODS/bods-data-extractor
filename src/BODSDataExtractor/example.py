@@ -12,15 +12,10 @@ try:
 except:
   from extractor import TimetableExtractor
   
-  
-from dotenv import load_dotenv
 import os
 
-#load environment variables
-load_dotenv()
-
 #retrieve api key from environment variables
-api = os.getenv('api_key')
+api = os.environ.get('api_key')
 
 #-------------------------------------------
 #            FINE TUNED RESULTS

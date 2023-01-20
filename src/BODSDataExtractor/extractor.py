@@ -93,16 +93,11 @@ class TimetableExtractor:
                 content=str(key) +" : "+ str(value)
                 
                 message="\n"+message+str(content)+"\n"
-                
+            #raise the appropriate message    
             raise ValueError(message)
         
         
         # #continue as normal if the API key is valid and it's not an empty dataset  
-        elif apiResponse==True:
-            
-            print("status_code :", response.status_code)
-            print("reason :", response.reason)
-            
         else:
             pass
             
@@ -127,8 +122,6 @@ class TimetableExtractor:
         
         else:
             pass
-        
-        
         df = pd.json_normalize(j1['results'])
         return df
 
@@ -2282,3 +2275,5 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+
+ 

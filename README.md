@@ -336,7 +336,7 @@ The previous examples are based on using the same TimetableMetadata object insta
 from BODSDataExtractor.extractor import TimetableExtractor
 
 service_data_path = "path to your service line level data here"
-service_data = pd.read_csv(bods_data_path)
+service_data = pd.read_csv(service_data_path)
 
 my_bus_data_object = TimetableExtractor(api_key=api  # Your API Key Here
                                      , limit=1)  # set the limit to 1 to avoid waiting for many datasets to be downloaded                                    
@@ -383,7 +383,7 @@ datasets_published_in_TXC_2_4 = my_bus_data_object.datasets_published_in_TXC_2_4
 
 red_dq = my_bus_data_object.red_dq_scores() #returns the number of operators in a table with red dq scores
 
-less_than_10 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 10) and returns a list of operators with a data quality score less than that integer
+less_than_90 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 90) and returns a list of operators with a data quality score less than that integer
 
 no_lic_no = my_bus_data_object.no_licence_no() # returns a report listing which datasets contain files which do not have a licence number
 

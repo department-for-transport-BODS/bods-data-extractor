@@ -2077,7 +2077,16 @@ class xmlDataExtractor:
         
         '''
         #find all text in the given xpath, return as a element object
-        data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        #Check service line level first
+        data = self.root.findall("Services//Service/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        
+        #if empty we proceed to service line level
+        if data==[]:
+            data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        else:
+            pass
+
+
 
         daysoperating=[]
         
@@ -2276,5 +2285,4 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-    
     

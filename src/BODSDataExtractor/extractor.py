@@ -49,7 +49,7 @@ class TimetableExtractor:
         self.otc_db = otc_db_download.fetch_otc_db()
         
      
-        if service_line_level == True and stop_level == True:
+        if service_line_level is True and stop_level is True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -57,13 +57,13 @@ class TimetableExtractor:
             pass
             
 
-        if service_line_level == True and stop_level == False:
+        if service_line_level is True and stop_level is False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
         else:
             pass
 
-        if stop_level == True and  service_line_level == False:
+        if stop_level is True and  service_line_level is False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -1102,7 +1102,7 @@ class TimetableExtractor:
         url = "https://naptan.api.dft.gov.uk/v1/access-nodes?&dataFormat=csv"
 
         r = requests.get(url).content
-        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')), low_memory=False)
+        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')), usecols=['ATCOCode','CommonName','Longitude','Latitude'])
 
         #filter results to those needed (just lat and long)
         naptan = naptan[['ATCOCode','CommonName','Longitude','Latitude']]
@@ -1840,8 +1840,8 @@ class TimetableExtractor:
         #try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
         try:
             #import the csv file as a text string from the BODSDataExtractor package
-            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
-            
+            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor',
+                                                 'BODSDataExtractor/ATCO_code_to_LA_lookup.csv')
             #wrap lookup_file string into a stringIO object so it can be read by pandas
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
@@ -2285,3 +2285,4 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+    

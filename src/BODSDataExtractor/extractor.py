@@ -314,8 +314,8 @@ class TimetableExtractor:
                             xml_output.append(public_use)
                             
                             
-                            # operating_days = xmlDataExtractor.extract_operating_days(xml_data)
-                            # xml_output.append(operating_days)
+                            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+                            xml_output.append(operating_days)
 
 
                             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
@@ -383,11 +383,11 @@ class TimetableExtractor:
         #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
         if self.stop_level == True:
             output_df = pd.DataFrame(output
-                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
+                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
                                  )
         else:
             output_df = pd.DataFrame(output
-                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
+                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
                                      )
         return output_df
 
@@ -454,8 +454,8 @@ class TimetableExtractor:
             xml_output.append(public_use)
             
             
-            # operating_days = xmlDataExtractor.extract_operating_days(xml_data)
-            # xml_output.append(operating_days)
+            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+            xml_output.append(operating_days)
             
 
             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
@@ -510,9 +510,9 @@ class TimetableExtractor:
         output_df = pd.DataFrame(xml_output).T
 
         if self.stop_level == True:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
+            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
         else:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
+            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
 
         return output_df, resp
 
@@ -579,6 +579,7 @@ class TimetableExtractor:
                                                                  ,'OperatorCode'
                                                                  ,'ServiceCode'
                                                                  ,'PublicUse'
+                                                                 ,'OperatingDays'
                                                                  ,'Origin'
                                                                  ,'Destination'
                                                                  ,'OperatingPeriodStartDate'
@@ -2092,8 +2093,15 @@ class xmlDataExtractor:
         
         '''
         #find all text in the given xpath, return as a element object
-        data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
-
+       
+        #check this first
+        data = self.root.findall("Services//Service/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        
+        if data==[]:
+            data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        else:
+            pass
+        
         daysoperating=[]
         
         for count, value in enumerate(data):
@@ -2291,6 +2299,5 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
 
 

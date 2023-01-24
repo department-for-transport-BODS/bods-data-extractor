@@ -49,7 +49,7 @@ class TimetableExtractor:
         self.otc_db = otc_db_download.fetch_otc_db()
         
      
-        if service_line_level == True and stop_level == True:
+        if service_line_level is True and stop_level is True:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -57,13 +57,13 @@ class TimetableExtractor:
             pass
             
 
-        if service_line_level == True and stop_level == False:
+        if service_line_level is True and stop_level is False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
         else:
             pass
 
-        if stop_level == True and  service_line_level == False:
+        if stop_level is True and  service_line_level is False:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
             self.generate_timetable()
@@ -82,8 +82,9 @@ class TimetableExtractor:
      
             if response.get("results")==[]:
                 
-                response={'status_code': 404, 'reason': '{"Empty Dataset"}'}
-
+                response={'status_code': 404, 'reason': '{"Empty Dataset, due to invalid "NOC" or "status" entered"}'}
+            else:
+                pass
                 
             
             #we are extracting the status code (key) and the reason (value) 
@@ -93,14 +94,11 @@ class TimetableExtractor:
                 content=str(key) +" : "+ str(value)
                 
                 message="\n"+message+str(content)+"\n"
-            #raise the appropriate message    
+                
             raise ValueError(message)
-        
-        
-        # #continue as normal if the API key is valid and it's not an empty dataset  
-        else:
-            pass
             
+            
+        
 
     def create_zip_level_timetable_df(self, response):
 
@@ -251,9 +249,6 @@ class TimetableExtractor:
         
         response = requests.get(url)
         
-        #if the api response is valid
-        apiResponse=True
-        self.check_api_response(response, apiResponse)
 
         #unizp the zipfile
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
@@ -514,7 +509,7 @@ class TimetableExtractor:
         else:
             output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
 
-        return output_df, resp
+        return output_df
 
 
 
@@ -2093,7 +2088,14 @@ class xmlDataExtractor:
         
         '''
         #find all text in the given xpath, return as a element object
-        data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        #Check service line level first
+        data = self.root.findall("Services//Service/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        
+        #if empty we proceed to service line level
+        if data==[]:
+            data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        else:
+            pass
 
         daysoperating=[]
         
@@ -2292,5 +2294,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
- 

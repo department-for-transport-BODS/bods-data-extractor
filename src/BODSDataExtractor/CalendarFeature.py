@@ -8,6 +8,7 @@ Created on Wed Jan  4 12:37:43 2023
 from extractor import TimetableExtractor
 import pandas as pd
 import datetime as dt
+import numpy as np
 import os
 from datetime import datetime, timedelta
 
@@ -25,11 +26,11 @@ analytical_timetable_data_without_duplicates = my_bus_data_object.analytical_tim
 # get relevant fields
 calendar_df = analytical_timetable_data_without_duplicates[['DatasetID', 'OperatorName', 'FileName', 'TradingName', 'ServiceCode', 'LineName', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate','RevisionNumber', 'OperatingDays']]
 
-# calendar_df.to_csv('calendar_df_26_01_2023.csv')
+#calendar_df.to_csv('calendar_df_27_01_2023.csv')
 
-# calendar_df = pd.read_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_26_01_2023.csv')
-# calendar_df = calendar_df[calendar_df['ServiceCode'] == 'PB0000328:006']
-# calendar_df = calendar_df[calendar_df['LineName'] == '75']
+#calendar_df = pd.read_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_27_01_2023.csv')
+# calendar_df = calendar_df[calendar_df['ServiceCode'] == 'PB0002404:355']
+# calendar_df = calendar_df[calendar_df['LineName'] == '821']
 # calendar_df = calendar_df[calendar_df['OperatingDays'] == 'Monday-Friday']
 
 # get dates 42 days from current date
@@ -64,7 +65,7 @@ for j in range(11, 54):
 
 calendar_df_sorted = calendar_df.sort_values(by=['ServiceCode', 'LineName', 'RevisionNumber', 'OperatingDays']
                                              , ascending=True)
-calendar_df_sorted.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_sorted_1.csv')
+#calendar_df_sorted.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_sorted_1.csv')
 
 # collect all dates from column names 11 onwards
 columns = []
@@ -79,8 +80,10 @@ operator_df = calendar_df_sorted.sort_values(by=['ServiceCode', 'LineName', 'Rev
 report_df = pd.DataFrame(columns=['ServiceCode', 'LineName', 'Look_ahead_missing_flag', 'Dates_for_missing_lookahead',
                                   'multiple_valid_files_issue_flag', 'Dates_for_multiple_valid_files', 'OperatingDays'])
 
+operator_df = operator_df.reset_index()
 # Group operator_df by ServiceCode, LineName, and OperatingDays
 groups = operator_df.groupby(['ServiceCode', 'LineName', 'OperatingDays'])
+
 
 # Iterate over the groups and process them
 for name, group in groups:
@@ -97,7 +100,7 @@ for name, group in groups:
         num_true = (group[col] == 'True').sum()
         # Check if any value in the column is True, the group has more than one row and the number of true rows
         # is greater than one
-        if (group[col].any() is True) & (len(group) > 1) & (num_true > 1):
+        if (group[col].any() == True) & (len(group) > 1) & (num_true > 1):
             # get the rows where the values are equal to 'True'
             true_rows = group[group[col] == 'True']
             # iterate through each row which has a 'True' value
@@ -111,14 +114,15 @@ for name, group in groups:
                     operator_df.loc[index, col] = 'False'
                 # if the revision number of the row is equal to the greatest revision number of the 'True' rows
                 # then there are multiple valid files for the specified date
-                if (operator_df.loc[index, 'RevisionNumber'] == true_rows_max_revision_number) & (
-                            len(true_rows[true_rows['RevisionNumber'] == true_rows_max_revision_number]) > 1):
+                if (operator_df.loc[index, 'RevisionNumber'] == true_rows_max_revision_number) & \
+                        (len(true_rows[true_rows['RevisionNumber'] == true_rows_max_revision_number]) > 1):
                     multiple_valid_files_issue_flag = True
                     Dates_for_multiple_valid_files.append(col)
         # Check if all values in the column are False or NaN. If so then the look ahead is missing
-        if (group[col].all() is False) or (group[col].isnull().all()):
+        if (group[col].all() == False) or (group[col].isnull().all()):
             Look_ahead_missing_flag = True
             IssueDates.append(col)
+    Dates_for_multiple_valid_files = np.unique(Dates_for_multiple_valid_files)
     report_df = report_df.append({'ServiceCode': group['ServiceCode'].iloc[0], 'LineName': group['LineName'].iloc[0],
                                   'Look_ahead_missing_flag': Look_ahead_missing_flag,
                                   'Dates_for_missing_lookahead': IssueDates,
@@ -127,7 +131,9 @@ for name, group in groups:
                                   'OperatingDays': group['OperatingDays'].iloc[0]},
                                    ignore_index=True)
 
-# UNCOMMENT THESE
+
+
+# Edit below paths
 operator_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\operator_df1.csv')
 consumer_df = operator_df.dropna(subset=dates, how='all') # do we want to drop n/a values for the consumer??
 consumer_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\consumer_df1.csv')

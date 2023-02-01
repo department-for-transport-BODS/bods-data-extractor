@@ -26,22 +26,22 @@ analytical_timetable_data_without_duplicates = my_bus_data_object.analytical_tim
 # get relevant fields
 calendar_df = analytical_timetable_data_without_duplicates[['DatasetID', 'OperatorName', 'FileName', 'TradingName', 'ServiceCode', 'LineName', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate','RevisionNumber', 'OperatingDays']]
 
-#calendar_df.to_csv('calendar_df_27_01_2023.csv')
+# calendar_df.to_csv('calendar_df_27_01_2023.csv')
 
-#calendar_df = pd.read_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_27_01_2023.csv')
-# calendar_df = calendar_df[calendar_df['ServiceCode'] == 'PB0000328:006']
+# calendar_df = pd.read_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_27_01_2023.csv')
+# calendar_df = calendar_df[calendar_df['ServiceCode'] == 'PB0000582:167']
 # calendar_df = calendar_df[calendar_df['LineName'] == '75']
 # calendar_df = calendar_df[calendar_df['OperatingDays'] == 'Monday-Friday']
 
 # get dates 42 days from current date
-todays_date = pd.to_datetime('today').normalize()
-expected_final_published_date = todays_date + pd.Timedelta(days=42)
+current_date = pd.to_datetime('today').normalize()
+expected_final_published_date = current_date + pd.Timedelta(days=42)
 
 delta = dt.timedelta(days=1)
-while todays_date <= expected_final_published_date:
-    calendar_df[todays_date] = None
-    print(todays_date, end='\n')
-    todays_date += delta
+while current_date <= expected_final_published_date:
+    calendar_df[current_date] = None
+    print(current_date, end='\n')
+    current_date += delta
 
 # convert data types for analysis
 calendar_df['OperatingPeriodStartDate'] = pd.to_datetime(calendar_df['OperatingPeriodStartDate'])
@@ -65,7 +65,7 @@ for j in range(11, 54):
 
 calendar_df_sorted = calendar_df.sort_values(by=['ServiceCode', 'LineName', 'RevisionNumber', 'OperatingDays']
                                              , ascending=True)
-#calendar_df_sorted.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_sorted_1.csv')
+#calendar_df_sorted.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\calendar_df_sorted.csv')
 
 # collect all dates from column names 11 onwards
 columns = []
@@ -77,7 +77,7 @@ operator_df = calendar_df_sorted.sort_values(by=['ServiceCode', 'LineName', 'Rev
                                              , ascending=True)
 
 # Create an empty report_df DataFrame to store the results
-report_df = pd.DataFrame(columns=['ServiceCode', 'LineName', 'Look_ahead_missing_flag', 'Dates_for_missing_lookahead',
+report_df = pd.DataFrame(columns=['LicenseNumber', 'ServiceCode', 'LineName', 'Look_ahead_missing_flag', 'Dates_for_missing_lookahead',
                                   'multiple_valid_files_issue_flag', 'Dates_for_multiple_valid_files', 'OperatingDays'])
 
 operator_df = operator_df.reset_index()
@@ -123,21 +123,20 @@ for name, group in groups:
             Look_ahead_missing_flag = True
             IssueDates.append(col)
     Dates_for_multiple_valid_files = np.unique(Dates_for_multiple_valid_files)
-    report_df = report_df.append({'ServiceCode': group['ServiceCode'].iloc[0], 'LineName': group['LineName'].iloc[0],
-                                  'Look_ahead_missing_flag': Look_ahead_missing_flag,
-                                  'Dates_for_missing_lookahead': IssueDates,
-                                  'multiple_valid_files_issue_flag': multiple_valid_files_issue_flag,
-                                  'Dates_for_multiple_valid_files': Dates_for_multiple_valid_files,
-                                  'OperatingDays': group['OperatingDays'].iloc[0]},
-                                   ignore_index=True)
-
-
+    temp_df = pd.DataFrame({'LicenseNumber': [str(group['ServiceCode'].iloc[0])[0:str(group['ServiceCode'].iloc[0]).find(':')]],
+                            'ServiceCode': [group['ServiceCode'].iloc[0]], 'LineName': [group['LineName'].iloc[0]],
+                            'Look_ahead_missing_flag': [Look_ahead_missing_flag],
+                            'Dates_for_missing_lookahead': [IssueDates],
+                            'multiple_valid_files_issue_flag': [multiple_valid_files_issue_flag],
+                            'Dates_for_multiple_valid_files': [Dates_for_multiple_valid_files],
+                            'OperatingDays': [group['OperatingDays'].iloc[0]]})
+    report_df = pd.concat([report_df, temp_df], ignore_index=True)
 
 # Edit below paths
-operator_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\operator_df1.csv')
+operator_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\operator_df.csv')
 consumer_df = operator_df.dropna(subset=dates, how='all') # do we want to drop n/a values for the consumer??
-consumer_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\consumer_df1.csv')
-report_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\report_df1.csv')
+consumer_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\consumer_df.csv')
+report_df.to_csv('C:\\Users\\irai\\OneDrive - KPMG\\BODS\\BDE Package\\src\\BODSDataExtractor\\report_df.csv')
 
 
 # consumer to query

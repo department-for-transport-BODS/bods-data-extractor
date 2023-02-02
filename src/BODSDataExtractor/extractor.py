@@ -238,7 +238,6 @@ class TimetableExtractor:
         """
         Download a ZIP file and extract the relevant contents
         of each xml file within into a dataframe
-
         """
 
         output = []
@@ -614,7 +613,6 @@ class TimetableExtractor:
         performance and storage sake. Also omits la_code column, as if user is not interested in 
         local authorities of services then this adds unnecessary duplication (one service line can be in
         multiple las.)
-
         '''
 
         #conditional logic required, as json cols dont exist if stop_level parameter != True
@@ -622,10 +620,10 @@ class TimetableExtractor:
         
         if self.stop_level == True:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
-            self.check_for_expired_operators()
+           # self.check_for_expired_end_dates()
         else:
             self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-            self.check_for_expired_operators()
+            self.check_for_expired_end_dates()
         return self.service_line_extract
 
 
@@ -633,7 +631,7 @@ class TimetableExtractor:
     def expired_status(date, end_date, today):
         """
         Based on the expiry date, a boolean value is assigned to the 'expired' variable, this is
-        then returned back to the 'check_for_expired_operators' function.
+        then returned back to the 'check_for_expired_end_dates' function.
         """        
         
         expired=False
@@ -653,7 +651,7 @@ class TimetableExtractor:
         return(expired)
             
             
-    def check_for_expired_operators(self):
+    def check_for_expired_end_dates(self):
 
         """
         Looks at the 'OperatingPeriodEndDate' column. For every date that's been entered, it 
@@ -685,7 +683,7 @@ class TimetableExtractor:
                 expiredFlag.append(TimetableExtractor.expired_status(date,end_date,today))
               
         #Column is inserted after the operating end date column,        
-        self.service_line_extract.insert( loc=24, column="Expired_Operator", value=expiredFlag)
+        self.service_line_extract.insert( loc=24, column="ExpiredEndDate", value=expiredFlag)
         
                             
         return self.service_line_extract
@@ -2084,7 +2082,6 @@ class xmlDataExtractor:
         '''
         Extracts the regular operating days from an xml file in a given location with a known namespace.
         Namespace can be found in constants.py and depends on if data is timetable or fares data
-
         
         '''
         #find all text in the given xpath, return as a element object

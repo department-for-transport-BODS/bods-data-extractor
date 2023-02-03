@@ -664,9 +664,9 @@ class TimetableExtractor:
 
         
         #convert operating date
-        if self.service_line_level == True:
+        if self.service_line_level is True:
             for date in self.service_line_extract['OperatingPeriodEndDate']:
-                if date==None:
+                if date is None:
                     expiredFlag.append("No End Date")
                     continue
                 

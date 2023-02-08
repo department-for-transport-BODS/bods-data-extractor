@@ -58,12 +58,9 @@ class TimetableExtractor:
         if stop_level:
             self.generate_timetable()
 
-    def create_zip_level_timetable_df(self, response):
-
-        """This function takes the json api response file 
-        and returns it as a pandas dataframe"""      
-
-        return pd.DataFrame([vars(t_dataset) for t_dataset in response.results])
+    def create_zip_level_timetable_df(self, timetable_api_response):
+        """Returns BODS Timetable API results as a dataframe."""
+        return pd.DataFrame([vars(t_dataset) for t_dataset in timetable_api_response.results])
 
     def extract_dataset_level_atco_codes(self):
 

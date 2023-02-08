@@ -57,34 +57,6 @@ class TimetableExtractor:
 
         if stop_level:
             self.generate_timetable()
-        
-    def check_api_response(self, response, apiResponse):
-        
-        #initialise empty message to be appended to
-        message=""
-
-        
-        if apiResponse==False:
-     
-            if response.get("results")==[]:
-                
-                response={'status_code': 404, 'reason': '{"Empty Dataset, due to invalid "NOC" or "status" entered"}'}
-            else:
-                pass
-                
-            
-            #we are extracting the status code (key) and the reason (value) 
-            
-            #checking through items in the api response dictionary
-            for key,value in response.items():
-                content=str(key) +" : "+ str(value)
-                
-                message="\n"+message+str(content)+"\n"
-                
-            raise ValueError(message)
-            
-            
-        
 
     def create_zip_level_timetable_df(self, response):
 

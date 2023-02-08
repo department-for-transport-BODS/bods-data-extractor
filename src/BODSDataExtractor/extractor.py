@@ -143,273 +143,122 @@ class TimetableExtractor:
             pass
 
     def download_extract_zip(self, url):
-
+        """Download a ZIP file and extract the relevant contents
+        of each xml file within into a dataframe.
         """
-        Download a ZIP file and extract the relevant contents
-        of each xml file within into a dataframe
-
-        """
-
+        print(f"Fetching zip file from {url} in metadata table...")
         output = []
-
-        print(f"Fetching zip file from {url} in metadata table...\n")
-        
-
-        
         response = requests.get(url)
-        
 
-        #unizp the zipfile
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
-
-            #loop through files in the zip
             for zipinfo in thezip.infolist():
-
                 extension = zipinfo.filename.split('.')[-1]
-
-                #if the filename has an 'xml' extension
-                if extension == 'xml':
-
-                    xml_output = []
-
-                    #open each file (assumed to be XML file)
-                    with thezip.open(zipinfo) as thefile:
-
-                        try:
-
-                            #note the url
-                            xml_output.append(url)
-
-                            #Creating xml data object
-                            xml_data = xmlDataExtractor(thefile)
-
-                            #extract data from xml 
-                            filename = xmlDataExtractor.extract_filename(xml_data)
-                            xml_output.append(filename)
-
-                            noc = xmlDataExtractor.extract_noc(xml_data)
-                            xml_output.append(noc)
-
-
-                            trading_name = xmlDataExtractor.extract_trading_name(xml_data)
-                            xml_output.append(trading_name)
-
-                            licence_number = xmlDataExtractor.extract_licence_number(xml_data)
-                            xml_output.append(licence_number)
-
-
-                            operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
-                            xml_output.append(operator_short_name)
-
-
-                            operator_code = xmlDataExtractor.extract_operator_code(xml_data)
-                            xml_output.append(operator_code)
-
-
-                            service_code = xmlDataExtractor.extract_service_code(xml_data)
-                            xml_output.append(service_code)
-
-
-                            line_name = xmlDataExtractor.extract_line_name(xml_data)
-                            xml_output.append(line_name)
-
-
-                            public_use = xmlDataExtractor.extract_public_use(xml_data)
-                            xml_output.append(public_use)
-                            
-                            
-                            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
-                            xml_output.append(operating_days)
-
-
-                            service_origin = xmlDataExtractor.extract_service_origin(xml_data)
-                            xml_output.append(service_origin)
-
-
-                            service_destination = xmlDataExtractor.extract_service_destination(xml_data)
-                            xml_output.append(service_destination)
-
-
-                            operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
-                            xml_output.append(operating_period_start_date)
-
-
-                            operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
-                            xml_output.append(operating_period_end_date)
-
-
-                            schema_version = xmlDataExtractor.extract_schema_version(xml_data)
-                            xml_output.append(schema_version)
-
-
-                            revision_number = xmlDataExtractor.extract_revision_number(xml_data)
-                            xml_output.append(revision_number)
-
-                            la_code = xmlDataExtractor.extract_la_code(xml_data)
-                            xml_output.append(la_code)
-
-                            #reset read cursor
-                            thefile.seek(0)
-
-                            #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
-                            if self.stop_level == True:
-# =============================================================================
-#                             also read in xml as a text string
-#                             this is required for extracting sections of the xml for further stop level extraction, not just elements or attribs
-# =============================================================================
-                                #reset read cursor
-                                thefile.seek(0)
-                                xml_text = thefile.read()
-                                xml_json = xmltodict.parse(xml_text, process_namespaces=False, force_list=('JourneyPatternSection','JourneyPatternTimingLink','VehicleJourney','VehicleJourneyTimingLink'))
-
-                                journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
-                                xml_output.append(journey_pattern_json)
-
-                                vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
-                                xml_output.append(vehicle_journey_json)
-
-                                services_json = xml_json['TransXChange']['Services']['Service']
-                                xml_output.append(services_json)
-
-                            else:
-                                pass
-
-                        except:
-                            TimetableExtractor.error_list.append(url)
-
+                if extension != 'xml':
+                    print(f'Found {extension} file extension in zip folder, passing...')
+                    continue
+                
+                with thezip.open(zipinfo) as thefile:
+                    try:
+                        xml_output = self._extract_xml(url, thefile)
                         output.append(xml_output)
+                    except: # TODO really should be catching specific errors
+                        TimetableExtractor.error_list.append(url)
 
-                else:
-                    print(f'file extension in zip folder is {extension}, passing...\n')
-                    pass
+        return pd.concat(output)
 
+    def download_extract_xml(self, url):
+        xml = self._download_xml(url)
+        return self._extract_xml(url, xml)
+
+    def _download_xml(self, url):
+        print(f"Fetching xml file from {url} in metadata table...")
+        resp = requests.get(url)
+        xml = io.BytesIO(resp.content)
+        return xml
+
+    def _extract_xml(self, url, xml):
+        xml_output = []
+
+        #note the url
+        xml_output.append(url)
+
+        #create xml data object
+        xml_data = xmlDataExtractor(xml)
+
+        #extract data from xml 
+        filename = xmlDataExtractor.extract_filename(xml_data)
+        xml_output.append(filename)
+
+        noc = xmlDataExtractor.extract_noc(xml_data)
+        xml_output.append(noc)
+
+        trading_name = xmlDataExtractor.extract_trading_name(xml_data)
+        xml_output.append(trading_name)
+
+        licence_number = xmlDataExtractor.extract_licence_number(xml_data)
+        xml_output.append(licence_number)
+
+        operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
+        xml_output.append(operator_short_name)
+
+        operator_code = xmlDataExtractor.extract_operator_code(xml_data)
+        xml_output.append(operator_code)
+
+        service_code = xmlDataExtractor.extract_service_code(xml_data)
+        xml_output.append(service_code)
+
+        line_name = xmlDataExtractor.extract_line_name(xml_data)
+        xml_output.append(line_name)
+
+        public_use = xmlDataExtractor.extract_public_use(xml_data)
+        xml_output.append(public_use)
+        
+        operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+        xml_output.append(operating_days)
+        
+        service_origin = xmlDataExtractor.extract_service_origin(xml_data)
+        xml_output.append(service_origin)
+
+        service_destination = xmlDataExtractor.extract_service_destination(xml_data)
+        xml_output.append(service_destination)
+
+        operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
+        xml_output.append(operating_period_start_date)
+
+        operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
+        xml_output.append(operating_period_end_date)
+
+        schema_version = xmlDataExtractor.extract_schema_version(xml_data)
+        xml_output.append(schema_version)
+
+        revision_number = xmlDataExtractor.extract_revision_number(xml_data)
+        xml_output.append(revision_number)
+
+        la_code = xmlDataExtractor.extract_la_code(xml_data)
+        xml_output.append(la_code)
 
         #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
         if self.stop_level == True:
-            output_df = pd.DataFrame(output
-                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
-                                 )
-        else:
-            output_df = pd.DataFrame(output
-                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
-                                     )
-        return output_df
-
-    def download_extract_xml(self, url):
-
-        """
-        Download an xml file and extract its relevant contents into a dataframe
-        """
-
-        xml_output = []
-        print(f"Fetching xml file from {url} in metadata table...\n")
-        
-        
-        resp = requests.get(url)
-        
-        
-        resp.encoding = 'utf-8-sig'
-
-        #save the filea as an xml then reopen it to parse, this can and should be optimised 
-        with open('temp.xml', 'w', encoding = 'utf-8') as file:
-            file.write(resp.text)
-            #size = os.path.getsize(r'temp.xml')
-
-        with open(r'temp.xml', 'r', encoding = 'utf-8') as xml:
-
-            #note the url
-            xml_output.append(url)
-
-            #create xml data object
-            xml_data = xmlDataExtractor(xml)
-
-            #extract data from xml 
-            filename = xmlDataExtractor.extract_filename(xml_data)
-            xml_output.append(filename)
-
-            noc = xmlDataExtractor.extract_noc(xml_data)
-            xml_output.append(noc)
-
-
-            trading_name = xmlDataExtractor.extract_trading_name(xml_data)
-            xml_output.append(trading_name)
-
-            licence_number = xmlDataExtractor.extract_licence_number(xml_data)
-            xml_output.append(licence_number)
-
-
-            operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
-            xml_output.append(operator_short_name)
-
-
-            operator_code = xmlDataExtractor.extract_operator_code(xml_data)
-            xml_output.append(operator_code)
-
-
-            service_code = xmlDataExtractor.extract_service_code(xml_data)
-            xml_output.append(service_code)
-
-
-            line_name = xmlDataExtractor.extract_line_name(xml_data)
-            xml_output.append(line_name)
-
-
-            public_use = xmlDataExtractor.extract_public_use(xml_data)
-            xml_output.append(public_use)
-            
-            
-            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
-            xml_output.append(operating_days)
-            
-
-            service_origin = xmlDataExtractor.extract_service_origin(xml_data)
-            xml_output.append(service_origin)
-
-
-            service_destination = xmlDataExtractor.extract_service_destination(xml_data)
-            xml_output.append(service_destination)
-
-
-            operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
-            xml_output.append(operating_period_start_date)
-
-
-            operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
-            xml_output.append(operating_period_end_date)
-            
-
-            schema_version = xmlDataExtractor.extract_schema_version(xml_data)
-            xml_output.append(schema_version)
-
-
-            revision_number = xmlDataExtractor.extract_revision_number(xml_data)
-            xml_output.append(revision_number)
-
-            la_code = xmlDataExtractor.extract_la_code(xml_data)
-            xml_output.append(la_code)
-
-            #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
-            if self.stop_level == True:
 
 # =============================================================================
 #               also read in xml as a text string
 #               this is required for extracting sections of the xml for further stop level extraction, not just elements or attribs
 # =============================================================================
-                xml.seek(0)
-                xml_text = xml.read()
-                xml_json = xmltodict.parse(xml_text, process_namespaces=False,  force_list=('JourneyPatternSection','JourneyPatternTimingLink','VehicleJourney','VehicleJourneyTimingLink'))
+            xml.seek(0)
+            xml_text = xml.read()
+            xml_json = xmltodict.parse(
+                xml_text,
+                process_namespaces=False, 
+                force_list=('JourneyPatternSection','JourneyPatternTimingLink','VehicleJourney','VehicleJourneyTimingLink'))
 
-                journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
-                xml_output.append(journey_pattern_json)
+            journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
+            xml_output.append(journey_pattern_json)
 
-                vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
-                xml_output.append(vehicle_journey_json)
+            vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
+            xml_output.append(vehicle_journey_json)
 
-                services_json = xml_json['TransXChange']['Services']['Service']
-                xml_output.append(services_json)
-
-            else:
-                pass
+            services_json = xml_json['TransXChange']['Services']['Service']
+            xml_output.append(services_json)
 
         output_df = pd.DataFrame(xml_output).T
 
@@ -419,8 +268,6 @@ class TimetableExtractor:
             output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
 
         return output_df
-
-
 
     def fetch_xml_filenames(self):
 

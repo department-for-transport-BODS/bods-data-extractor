@@ -110,15 +110,12 @@ class TimetableExtractor:
             print('No results returned from BODS Timetable API. Please check input parameters.')
             return
 
+        print(f"Metadata downloaded for {len(self.metadata['url'])} records, converting to dataframe...")
         self.metadata = self.create_zip_level_timetable_df(timetable_datasets)
-        print(f"metadata downloaded for {len(self.metadata['url'])} records, converting to dataframe...")
-  
-        print('appending filetypes...')
-        self.metadata['filetype'] = [TimetableExtractor.determine_file_type(self.metadata,x) for x in self.metadata['url']]
+        self.metadata['filetype'] = self.metadata['extension']
 
-        #limit to just bods compliant files if requested
         if self.bods_compliant == True:
-            self.metadata = self.metadata[self.metadata['bods_compliance']==True]
+            self.metadata = self.metadata[self.metadata['bods_compliance'] == True]
 
         #limit results to specific atco codes if requested
         if self.atco_code is not None:

@@ -82,7 +82,7 @@ class TimetableExtractor:
         and returns the json output as a dataframe
         '''
 
-        print(f"Fetching timetable metadata for up to {self.limit} datasets...")
+        print(f"Fetching timetable metadata for up to {self.limit:,} datasets...")
         bods = BODSClient(api_key=self.api_key)
         params = timetables.TimetableParams(limit=self.limit,
                                             nocs=self.nocs,
@@ -102,7 +102,7 @@ class TimetableExtractor:
         if self.bods_compliant == True:
             self.metadata = self.metadata[self.metadata['bods_compliance'] == True]
 
-        print(f"Metadata downloaded for {len(self.metadata['url'])} records.")
+        print(f"Metadata downloaded for {self.metadata.shape[0]:,} datasets.")
 
     def xml_metadata(self, url, error_list):
 

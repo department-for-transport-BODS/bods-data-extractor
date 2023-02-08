@@ -65,18 +65,6 @@ class TimetableExtractor:
 
         return pd.DataFrame([vars(t_dataset) for t_dataset in response.results])
 
-    def determine_file_type(self ,url):
-        '''downloads a file from a url and returns the extension'''
-
-        response = requests.head(url)
-        try:
-            filename = response.headers["Content-Disposition"].split('"')[1]
-            extension = filename.split('.')[-1]
-
-            return extension
-        except:
-            return 'error in filename'
-
     def extract_dataset_level_atco_codes(self):
 
         #initiate list for atco codes

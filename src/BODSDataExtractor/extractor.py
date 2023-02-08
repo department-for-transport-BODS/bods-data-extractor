@@ -47,7 +47,7 @@ class TimetableExtractor:
         self.pull_timetable_data()
         
         if self.metadata is None:
-            return
+            return # early return if no results to process
 
         self.otc_db = otc_db_download.fetch_otc_db()
 
@@ -58,9 +58,11 @@ class TimetableExtractor:
         if stop_level:
             self.generate_timetable()
 
-    def create_zip_level_timetable_df(self, timetable_api_response):
-        """Returns BODS Timetable API results as a dataframe."""
-        return pd.DataFrame([vars(t_dataset) for t_dataset in timetable_api_response.results])
+    def create_metadata_df(self, timetable_api_response):
+        """Converts BODS Timetable API results into a Pandas dataframe."""
+        df =  pd.DataFrame([vars(t_dataset) for t_dataset in timetable_api_response.results])
+        df['filetype'] = df['extension']
+        return df
 
     def extract_dataset_level_atco_codes(self):
 
@@ -75,29 +77,34 @@ class TimetableExtractor:
 
         return atco_codes
 
-    def pull_timetable_data(self):
-
-        '''Combines a number of functions to call the BODS API, 
-        set the limit for number of records to return 
-        and returns the json output as a dataframe
-        '''
-
-        print(f"Fetching timetable metadata for up to {self.limit:,} datasets...")
+    def _get_timetable_datasets(self):
+        """Queries the BODS Timetable API as per the parameters set at instance
+        initialisation.
+        """
         bods = BODSClient(api_key=self.api_key)
         params = timetables.TimetableParams(limit=self.limit,
                                             nocs=self.nocs,
                                             status=self.status,
                                             admin_areas=self.atco_code,
                                             search=self.search)
-        timetable_datasets = bods.get_timetable_datasets(params=params)
+        return bods.get_timetable_datasets(params=params)
+
+    def pull_timetable_data(self):
+        """Creates the timetable dataset metadata dataframe and assigns to
+        self.metadata.
+        
+        Will return early with self.metadata set to None if there
+        are no datasets to work with.
+        """
+        print(f"Fetching timetable metadata for up to {self.limit:,} datasets...")
+        timetable_datasets = self._get_timetable_datasets()
 
         if timetable_datasets.count == 0 :
             self.metadata = None
             print('No results returned from BODS Timetable API. Please check input parameters.')
             return
 
-        self.metadata = self.create_zip_level_timetable_df(timetable_datasets)
-        self.metadata['filetype'] = self.metadata['extension']
+        self.metadata = self.create_metadata_df(timetable_datasets)
 
         if self.bods_compliant == True:
             self.metadata = self.metadata[self.metadata['bods_compliance'] == True]

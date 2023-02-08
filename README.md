@@ -98,6 +98,21 @@ There are a number of different documents and data standards that are used as pa
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+### Glossary of Terms
+
+To help you when using the data, we've put together a list of useful terms and their meanings. 
+
+| Term    | Definition |
+|:-------|:-----------|
+|ATCO | ATCO (Association of Transport Co-ordinating Officers) codes refer to the unique identifiers used for individual UK bus stops. The first 3 numbers denote the authority responsible for the stop. The fourth character is a 0 (zero). The remaining characters to a maximum of 8 are alpha-numeric determined locally. <br/> BODS Data Extractor allows you to filter results on the ATCO admin authority (the first 3 numbers). See fine-tuning section below for more detail on how to do this.|
+|Data Field Definitions | For definitions of each field within the data returned, please see the [BODS Data Catalogue](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=datacatalogue).
+| Data Set/Feed | Operators must provide a complete set of data regarding local bus services. See [BODS Quick Start Guidance](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=quickstart) for more detail. |
+|NeTEx | NeTEx is a CEN standard that can be used to represent many aspects of a multi-modal transport network. The UK profile includes elements related to fares for buses. Please see link [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats).|
+| NOC | NOC stands for National Operator Code. Each bus operator has its own identifying code, consisting of four letters. To find the NOC for the operators you are interested in, you can browse or download the NOC Database from [Traveline](https://www.travelinedata.org.uk/traveline-open-data/transport-operations/about-2/). |
+|OTC Database| OTC stands for Office of the Traffic Commissioner. The OTC database contains information for every registered bus service in the UK. |
+|Siri-VM | Siri-VM is an XML standard for exchanging real time bus location information. Please see link [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats).|
+| TransXChange | TransXChange is the UK nationwide standard for exchanging bus schedules and related data. Please see link [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats).|
+
 <!-- GETTING STARTED -->
 ## Getting Started
 

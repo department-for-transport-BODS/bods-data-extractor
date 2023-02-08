@@ -433,13 +433,11 @@ class TimetableExtractor:
         return full_table
 
     def analytical_timetable_data(self):
-
-        ''''
-        Uses a collection of extraction functions to extract data from within xml files. 
+        """Uses a collection of extraction functions to extract data from within xml files. 
         Some of these xml files are within zip files, and so these are processed differently.
         This extracted data is combined with the metadata of each file, and columns renamed to
-        yield analytical ready timetable data
-        '''
+        yield analytical ready timetable data.
+        """
 
         orig_cols = ['url', 'id', 'operator_name' ,'description', 'comment', 'status', 'dq_score', 'dq_rag', 'bods_compliance', 'filetype']
         txc_cols = ['URL', 'DatasetID', 'OperatorName','Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType']

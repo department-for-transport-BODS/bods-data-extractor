@@ -144,7 +144,7 @@ class TimetableExtractor:
 
     def download_extract_zip(self, url):
         """Download a ZIP file and extract the relevant contents
-        of each xml file within into a dataframe.
+        of each xml file into a dataframe.
         """
         print(f"Fetching zip file from {url} in metadata table...")
         output = []
@@ -167,10 +167,12 @@ class TimetableExtractor:
         return pd.concat(output)
 
     def download_extract_xml(self, url):
+        """Download the xml at the specified url, then extract into a dataframe."""
         xml = self._download_xml(url)
         return self._extract_xml(url, xml)
 
     def _download_xml(self, url):
+        """Download the xml from the specified URL."""
         print(f"Fetching xml file from {url} in metadata table...")
         resp = requests.get(url)
         xml = io.BytesIO(resp.content)

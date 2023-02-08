@@ -102,6 +102,7 @@ class TimetableExtractor:
         params = timetables.TimetableParams(limit=self.limit,
                                             nocs=self.nocs,
                                             status=self.status,
+                                            admin_areas=self.atco_code,
                                             search=self.search)
         timetable_datasets = bods.get_timetable_datasets(params=params)
 
@@ -110,26 +111,13 @@ class TimetableExtractor:
             print('No results returned from BODS Timetable API. Please check input parameters.')
             return
 
-        print(f"Metadata downloaded for {len(self.metadata['url'])} records, converting to dataframe...")
         self.metadata = self.create_zip_level_timetable_df(timetable_datasets)
         self.metadata['filetype'] = self.metadata['extension']
 
         if self.bods_compliant == True:
             self.metadata = self.metadata[self.metadata['bods_compliance'] == True]
 
-        #limit results to specific atco codes if requested
-        if self.atco_code is not None:
-            #atco codes are stored within a list of dicts in the api response - need to extract these
-            #because of this, must process in a separate dataframe to the output metadata df
-            exploded_metadata = self.metadata.copy()
-            exploded_metadata['admin_areas'] =  exploded_metadata['admin_areas'].apply(lambda x: [d['atco_code'] for d in x])
-            #atco codes extracted into list; need to explode these out so one atco code per row
-            exploded_metadata = TimetableExtractor.xplode(exploded_metadata,['admin_areas'])
-            #use exploded out atco codes to filter for only the requested ones
-            exploded_metadata = exploded_metadata[exploded_metadata['admin_areas'].isin(self.atco_code)]
-
-            #filter the output metadata dataframe by the atco codes
-            self.metadata = self.metadata[self.metadata['id'].isin(exploded_metadata['id'])]
+        print(f"Metadata downloaded for {len(self.metadata['url'])} records.")
 
     def xml_metadata(self, url, error_list):
 

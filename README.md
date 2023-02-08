@@ -59,6 +59,7 @@
     - [And more!](#and-more)
 - [Contact / Contribute](#contact--contribute)
   - [Contact the Bus Open Data Service](#contact-the-bus-open-data-service)
+- [FAQs](#FAQs)  
 - [License](#license)
 
 <!-- ABOUT THE PROJECT -->
@@ -477,6 +478,12 @@ https://discord.gg/4mMg5VXm5A
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- FAQs -->
+## FAQs
+
 
 
 

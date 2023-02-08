@@ -46,6 +46,9 @@ class TimetableExtractor:
 
         self.pull_timetable_data()
         
+        if self.metadata is None:
+            return
+
         self.otc_db = otc_db_download.fetch_otc_db()
 
         if service_line_level or stop_level:
@@ -86,25 +89,9 @@ class TimetableExtractor:
     def create_zip_level_timetable_df(self, response):
 
         """This function takes the json api response file 
-        and returns it as a pandas dataframe"""
+        and returns it as a pandas dataframe"""      
 
-        
-        j = response.json()
-        j1 = json.loads(j)   
-        
-        #checking the json api response to check the length of the response is invalid or we have an empty dataset
-        
-        if len(j1)<4 or j1.get("results")==[] :
-            
-        
-            apiResponse=False
-            
-            self.check_api_response(j1, apiResponse)
-        
-        else:
-            pass
-        df = pd.json_normalize(j1['results'])
-        return df
+        return pd.DataFrame([vars(t_dataset) for t_dataset in response.results])
 
     def determine_file_type(self ,url):
         '''downloads a file from a url and returns the extension'''
@@ -138,32 +125,28 @@ class TimetableExtractor:
         and returns the json output as a dataframe
         '''
 
-        #instantiate a BODSClient object
-        bods = BODSClient(api_key = self.api_key)
+        print(f"Fetching timetable metadata for up to {self.limit} datasets...")
+        bods = BODSClient(api_key=self.api_key)
+        params = timetables.TimetableParams(limit=self.limit,
+                                            nocs=self.nocs,
+                                            status=self.status,
+                                            search=self.search)
+        timetable_datasets = bods.get_timetable_datasets(params=params)
 
-        params = timetables.TimetableParams(limit = self.limit
-                                            , nocs = self.nocs
-                                            , status = self.status
-                                            , search = self.search
-                                            )
+        if timetable_datasets.count == 0 :
+            self.metadata = None
+            print('No results returned from BODS Timetable API. Please check input parameters.')
+            return
 
-        #set params of get_timetable_datasets method
-        print(f"Fetching timetable metadata for up to {self.limit} datasets...\n")
-        data = bods.get_timetable_datasets(params = params)
-
-        #convert the json output into a dataframe
-
-        self.metadata = TimetableExtractor.create_zip_level_timetable_df(self, data)
-        print(f"metadata downloaded for {len(self.metadata['url'])} records, converting to dataframe...\n")
-
-        print('appending filetypes...\n')
+        self.metadata = self.create_zip_level_timetable_df(timetable_datasets)
+        print(f"metadata downloaded for {len(self.metadata['url'])} records, converting to dataframe...")
+  
+        print('appending filetypes...')
         self.metadata['filetype'] = [TimetableExtractor.determine_file_type(self.metadata,x) for x in self.metadata['url']]
 
         #limit to just bods compliant files if requested
         if self.bods_compliant == True:
             self.metadata = self.metadata[self.metadata['bods_compliance']==True]
-        else:
-            pass
 
         #limit results to specific atco codes if requested
         if self.atco_code is not None:
@@ -178,12 +161,6 @@ class TimetableExtractor:
 
             #filter the output metadata dataframe by the atco codes
             self.metadata = self.metadata[self.metadata['id'].isin(exploded_metadata['id'])]
-        else:
-            pass
-
-        return self.metadata
-
-
 
     def xml_metadata(self, url, error_list):
 

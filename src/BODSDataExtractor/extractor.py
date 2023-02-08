@@ -43,32 +43,17 @@ class TimetableExtractor:
         self.atco_code = atco_code
         self.service_line_level = service_line_level
         self.stop_level = stop_level
+
         self.pull_timetable_data()
+        
         self.otc_db = otc_db_download.fetch_otc_db()
-        
-     
-        if service_line_level is True and stop_level is True:
+
+        if service_line_level or stop_level:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
+
+        if stop_level:
             self.generate_timetable()
-        else:
-            pass
-            
-
-        if service_line_level is True and stop_level is False:
-            self.analytical_timetable_data()
-            self.analytical_timetable_data_analysis()
-        else:
-            pass
-
-        if stop_level is True and  service_line_level is False:
-            self.analytical_timetable_data()
-            self.analytical_timetable_data_analysis()
-            self.generate_timetable()
-
-        # self.service_line_extract = service_line_extract
-        
-        
         
     def check_api_response(self, response, apiResponse):
         

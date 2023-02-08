@@ -441,39 +441,24 @@ class TimetableExtractor:
         yield analytical ready timetable data
         '''
 
-        #make the 3 tables
-        tXC_columns = ['URL', 'DatasetID', 'OperatorName','Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType']
-        master_table = pd.DataFrame(columns = tXC_columns)
-        zip_table = pd.DataFrame(columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','journey_pattern_json'] )
-        xml_table = pd.DataFrame(columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','journey_pattern_json'] )
+        orig_cols = ['url', 'id', 'operator_name' ,'description', 'comment', 'status', 'dq_score', 'dq_rag', 'bods_compliance', 'filetype']
+        txc_cols = ['URL', 'DatasetID', 'OperatorName','Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType']
+        rename_mapper = {orig: txc for orig, txc in zip(orig_cols, txc_cols)}
 
+        extracted_xmls = []
+        for dataset_url in self.metadata.query('filetype == "xml"')['url']:
+            extracted_xmls.append(self.download_extract_xml(dataset_url))
 
-        metadata_table = self.metadata
+        extracted_zips = []
+        for dataset_url in self.metadata.query('filetype == "zip"')['url']:
+            extracted_xmls.append(self.download_extract_zip(dataset_url))
 
-        master_table[['URL', 'DatasetID', 'OperatorName' ,'Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType' ]] = metadata_table[['url', 'id', 'operator_name' ,'description', 'comment', 'status', 'dq_score', 'dq_rag', 'bods_compliance', 'filetype']]
+        zip_xml_table = pd.concat(extracted_xmls + extracted_zips)
 
-        #handle xmls and zips differently - in case there are no xmls/zips to interogate pass
-        xml_table = master_table.query('FileType == "xml"')
-        xml_table = [TimetableExtractor.download_extract_xml(self, x) for x in xml_table['URL']]
-        try:
-            xml_table = pd.concat(xml_table)
-        except:
-            #empty dataframe required even if no xmls so concating dfs below does not break 
-            xml_table = pd.DataFrame()
-
-
-        zip_table = master_table.query('FileType == "zip"')
-        zip_table = [TimetableExtractor.download_extract_zip(self, x) for x in zip_table['URL']]
-        try:
-            zip_table = pd.concat(zip_table)
-        except:
-            #empty dataframe required even if no zips so concating dfs below does not break 
-            zip_table = pd.DataFrame()
-
-
-        zip_xml_table = pd.concat([xml_table, zip_table])
-
-        self.service_line_extract_with_stop_level_json = master_table.merge(zip_xml_table, how = 'outer', on = 'URL')
+        self.service_line_extract_with_stop_level_json = self.metadata \
+            .filter(orig_cols, axis=1) \
+            .rename(columns=rename_mapper) \
+            .merge(zip_xml_table, how='outer', on='URL')
 
         #explode rows that are always just 1 value to get attributes out of lists
         self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['NOC'

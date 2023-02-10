@@ -158,6 +158,21 @@ class TimetableExtractor:
         except AttributeError:
             return None
 
+    def download_extract_txc(self, url):
+        """Download the txc data from a dataset url (can be zip or single xml) and
+        extracts the data into a Pandas dataframe."""
+        response = requests.get(url)
+        filetype = self._dataset_filetype(response.headers)
+        if not filetype:
+            print('Invalid dataset file found: "{filetype}", skipping...')
+            return
+        if filetype == '.zip':
+            print(f'Fetching zip file from {url}...')
+            self._extract_zip(response)
+        else:
+            print(f'Fetching xml file from {url}...')
+            self._extract_xml(response)
+
     def download_extract_zip(self, url):
         """Download a ZIP file and extract the relevant contents
         of each xml file into a dataframe.

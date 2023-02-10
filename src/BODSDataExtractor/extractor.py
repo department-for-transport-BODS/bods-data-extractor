@@ -421,20 +421,6 @@ class TimetableExtractor:
                             
         return self.service_line_extract
 
-
-
-    def zip_or_xml(self, extension, url):
-
-        """
-        Dictates which extraction function to use based on whether the downloaded
-        file from the BODS platform is an xml, or a zip file.
-        """
-
-        if extension == 'zip':
-            TimetableExtractor.download_extract_zip(self, url)
-        else:
-            TimetableExtractor.download_extract_xml(self, url)
-
     def xplode(self, df, cols_to_explode):
         """Explode out lists in dataframes.
         Taken from https://stackoverflow.com/a/61390677"""

@@ -647,7 +647,7 @@ class TimetableExtractor:
         stop_level_df_journey = pd.DataFrame(stop_level_list_journey)
 
         #explode out lists in dataframe
-        stop_level_df_journey = TimetableExtractor.xplode(stop_level_df_journey,['JourneyPatternSectionID'
+        stop_level_df_journey = self.xplode(stop_level_df_journey,['JourneyPatternSectionID'
                                           ,"journey_pattern_timing_link"
                                           ,"stop_from"
                                           ,"stop_to"
@@ -696,7 +696,7 @@ class TimetableExtractor:
         stop_level_df_vehicle = pd.DataFrame(stop_level_list_vehicle)
 
         #explode out lists in dataframe
-        stop_level_df_vehicle = TimetableExtractor.xplode(stop_level_df_vehicle,[
+        stop_level_df_vehicle = self.xplode(stop_level_df_vehicle,[
                                             "VehicleJourneyCode"
                                             ,"JourneyPatternRef"
                                             ,"DepartureTime"
@@ -743,7 +743,7 @@ class TimetableExtractor:
         stop_level_df_vehicle = pd.DataFrame(stop_level_list_vehicle)
 
         #explode out lists in dataframe
-        stop_level_df_vehicle = TimetableExtractor.xplode(stop_level_df_vehicle,[
+        stop_level_df_vehicle = self.xplode(stop_level_df_vehicle,[
                                                 # "VehicleJourneyCode"
                                                 "JourneyPatternRef"
                                                 ,"LineRef"
@@ -794,7 +794,7 @@ class TimetableExtractor:
         stop_level_df_service = pd.DataFrame(stop_level_list_service)
 
         #explode out lists in dataframe
-        stop_level_df_service = TimetableExtractor.xplode(stop_level_df_service,['JourneyPattern_id', 'JourneyPatternSectionRef'])
+        stop_level_df_service = self.xplode(stop_level_df_service,['JourneyPattern_id', 'JourneyPatternSectionRef'])
         stop_level_df_service = stop_level_df_service.explode(['JourneyPatternSectionRef']).reset_index()
         del stop_level_df_service['index']
 

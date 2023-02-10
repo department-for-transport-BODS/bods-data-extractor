@@ -13,6 +13,7 @@ from itertools import zip_longest, product
 import numpy as np
 from pathlib import Path
 from sys import platform
+import re
 # try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
 try:
     import BODSDataExtractor.otc_db_download as otc_db_download
@@ -145,6 +146,17 @@ class TimetableExtractor:
             print(f"*****Error in dataset. Please check filetype: {url}*****\n")
             TimetableExtractor.error_list.append(url)
             pass
+
+    def _dataset_filetype(self, response_headers):
+        """Determines the filetype of the dataset served up by a dataset url.
+        Returns None if file is not a zip or xml. Else returns '.zip' or '.xml'.
+        """
+        pattern = r'(\.zip|\.xml)'
+        m = re.search(pattern, response_headers['Content-Disposition'])
+        try:
+            return m.group(1)
+        except AttributeError:
+            return None
 
     def download_extract_zip(self, url):
         """Download a ZIP file and extract the relevant contents

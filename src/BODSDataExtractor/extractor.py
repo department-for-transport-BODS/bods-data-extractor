@@ -35,7 +35,7 @@ class TimetableExtractor:
 
     error_list = []
 
-    def __init__(self, api_key, limit=10000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False, threaded=False):
+    def __init__(self, api_key, limit=10_000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False, threaded=False):
         self.api_key = api_key
         self.limit = limit
         self.nocs = nocs
@@ -48,7 +48,7 @@ class TimetableExtractor:
         self.threaded = threaded
 
         self.pull_timetable_data()
-        
+
         if self.metadata is None:
             return # early return if no results to process
 
@@ -99,14 +99,14 @@ class TimetableExtractor:
     def pull_timetable_data(self):
         """Creates the timetable dataset metadata dataframe and assigns to
         self.metadata.
-        
+
         Will return early with self.metadata set to None if there
         are no datasets to work with.
         """
         print(f"Fetching timetable metadata for up to {self.limit:,} datasets...")
         timetable_datasets = self._get_timetable_datasets()
 
-        if timetable_datasets.count == 0 :
+        if timetable_datasets.count == 0:
             self.metadata = None
             print('No results returned from BODS Timetable API. Please check input parameters.')
             return

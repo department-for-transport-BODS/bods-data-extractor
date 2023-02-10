@@ -168,11 +168,13 @@ class TimetableExtractor:
             return
         if filetype == '.zip':
             print(f'Fetching zip file from {url}...')
-            self._extract_zip(response)
+            txc_df = self._extract_zip(response)
         else:
             print(f'Fetching xml file from {url}...')
             xml = io.BytesIO(response.content)
-            self._extract_xml(response.url, xml)
+            txc_df = self._extract_xml(response.url, xml)
+
+        return txc_df
 
     def _extract_zip(self, response):
         """Download a ZIP file and extract the relevant contents
@@ -311,19 +313,14 @@ class TimetableExtractor:
         rename_mapper = {orig: txc for orig, txc in zip(orig_cols, txc_cols)}
 
         extracted_xmls = []
-        for dataset_url in self.metadata.query('filetype == "xml"')['url']:
-            extracted_xmls.append(self.download_extract_xml(dataset_url))
-
-        extracted_zips = []
-        for dataset_url in self.metadata.query('filetype == "zip"')['url']:
-            extracted_xmls.append(self.download_extract_zip(dataset_url))
-
-        zip_xml_table = pd.concat(extracted_xmls + extracted_zips)
+        for dataset_url in self.metadata['url']:
+            extracted_xmls.append(self.download_extract_txc(dataset_url))
+        xml_table = pd.concat(extracted_xmls)
 
         self.service_line_extract_with_stop_level_json = self.metadata \
             .filter(orig_cols, axis=1) \
             .rename(columns=rename_mapper) \
-            .merge(zip_xml_table, how='outer', on='URL')
+            .merge(xml_table, how='outer', on='URL')
 
         #explode rows that are always just 1 value to get attributes out of lists
         self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['NOC'

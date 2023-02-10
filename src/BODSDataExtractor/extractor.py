@@ -14,6 +14,7 @@ import numpy as np
 from pathlib import Path
 from sys import platform
 import re
+import concurrent.futures
 # try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
 try:
     import BODSDataExtractor.otc_db_download as otc_db_download
@@ -34,7 +35,7 @@ class TimetableExtractor:
 
     error_list = []
 
-    def __init__(self, api_key, limit=10000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False):
+    def __init__(self, api_key, limit=10000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False, threaded=False):
         self.api_key = api_key
         self.limit = limit
         self.nocs = nocs
@@ -44,6 +45,7 @@ class TimetableExtractor:
         self.atco_code = atco_code
         self.service_line_level = service_line_level
         self.stop_level = stop_level
+        self.threaded = threaded
 
         self.pull_timetable_data()
         
@@ -278,10 +280,15 @@ class TimetableExtractor:
         ]
         rename_mapper = {orig: txc for orig, txc in zip(orig_cols, txc_cols)}
 
-        extracted_xmls = []
-        for dataset_url in self.metadata["url"]:
-            extracted_xmls.append(self.download_extract_txc(dataset_url))
-        xml_table = pd.concat(extracted_xmls)
+        if self.threaded:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                results = executor.map(self.download_extract_txc, self.metadata["url"].to_list())
+                xml_table = pd.concat([df for df in results])
+        else:
+            extracted_xmls = []
+            for dataset_url in self.metadata["url"]:
+                extracted_xmls.append(self.download_extract_txc(dataset_url))
+            xml_table = pd.concat(extracted_xmls)
 
         self.service_line_extract_with_stop_level_json = (
             self.metadata.filter(orig_cols, axis=1)

@@ -171,43 +171,30 @@ class TimetableExtractor:
             self._extract_zip(response)
         else:
             print(f'Fetching xml file from {url}...')
-            self._extract_xml(response)
+            xml = io.BytesIO(response.content)
+            self._extract_xml(response.url, xml)
 
-    def download_extract_zip(self, url):
+    def _extract_zip(self, response):
         """Download a ZIP file and extract the relevant contents
         of each xml file into a dataframe.
         """
-        print(f"Fetching zip file from {url} in metadata table...")
         output = []
-        response = requests.get(url)
 
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
             for zipinfo in thezip.infolist():
                 extension = zipinfo.filename.split('.')[-1]
                 if extension != 'xml':
-                    print(f'Found {extension} file extension in zip folder, passing...')
+                    print(f'Found "{extension}" file in zip folder, passing...')
                     continue
-                
+
                 with thezip.open(zipinfo) as thefile:
                     try:
-                        xml_output = self._extract_xml(url, thefile)
+                        xml_output = self._extract_xml(response.url, thefile)
                         output.append(xml_output)
                     except: # TODO really should be catching specific errors
-                        TimetableExtractor.error_list.append(url)
+                        TimetableExtractor.error_list.append(response.url)
 
         return pd.concat(output)
-
-    def download_extract_xml(self, url):
-        """Download the xml at the specified url, then extract into a dataframe."""
-        xml = self._download_xml(url)
-        return self._extract_xml(url, xml)
-
-    def _download_xml(self, url):
-        """Download the xml from the specified URL."""
-        print(f"Fetching xml file from {url} in metadata table...")
-        resp = requests.get(url)
-        xml = io.BytesIO(resp.content)
-        return xml
 
     def _extract_xml(self, url, xml):
         xml_output = []
@@ -245,10 +232,10 @@ class TimetableExtractor:
 
         public_use = xmlDataExtractor.extract_public_use(xml_data)
         xml_output.append(public_use)
-        
+
         operating_days = xmlDataExtractor.extract_operating_days(xml_data)
         xml_output.append(operating_days)
-        
+
         service_origin = xmlDataExtractor.extract_service_origin(xml_data)
         xml_output.append(service_origin)
 
@@ -270,7 +257,7 @@ class TimetableExtractor:
         la_code = xmlDataExtractor.extract_la_code(xml_data)
         xml_output.append(la_code)
 
-        #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
+        # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
         if self.stop_level == True:
 
 # =============================================================================

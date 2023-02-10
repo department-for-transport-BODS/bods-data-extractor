@@ -331,34 +331,25 @@ class TimetableExtractor:
 # =============================================================================
         if self.atco_code is not None:
             self.service_line_extract_with_stop_level_json = self.service_line_extract_with_stop_level_json[self.service_line_extract_with_stop_level_json['la_code'].isin(self.atco_code)]
-        else:
-            pass
-
-        return self.service_line_extract_with_stop_level_json
-
 
     def analytical_timetable_data_analysis(self):
-
-        '''
-        Returns a copy of the service line level data suitable for analysis. Omits the columns with jsons
+        """Returns a copy of the service line level data suitable for analysis. Omits the columns with jsons
         of the final stop level data required for further processing and stop level analysis, for 
         performance and storage sake. Also omits la_code column, as if user is not interested in 
         local authorities of services then this adds unnecessary duplication (one service line can be in
         multiple las.)
+        """
+        self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(
+            ["la_code"], axis=1
+        )
+        if self.stop_level:
+            self.service_line_extract_with_stop_level_json.drop(
+                ["journey_pattern_json", "vehicle_journey_json", "services_json"], axis=1
+            )
 
-        '''
+        self.service_line_extract = self.service_line_extract.drop_duplicates()
+        self.check_for_expired_operators()
 
-        #conditional logic required, as json cols dont exist if stop_level parameter != True
-
-        
-        if self.stop_level == True:
-            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
-            self.check_for_expired_operators()
-        else:
-            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-            self.check_for_expired_operators()
-        return self.service_line_extract          
-            
     def check_for_expired_operators(self):
         """Adds service expiry status (True or False) to service level extract,
         based on "OperatingPeriodEndDate" and today's date, where applicable.

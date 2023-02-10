@@ -199,65 +199,9 @@ class TimetableExtractor:
         return pd.concat(output)
 
     def _extract_xml(self, url, xml):
-        xml_output = []
-
-        #note the url
-        xml_output.append(url)
-
-        #create xml data object
-        xml_data = xmlDataExtractor(xml)
-
-        #extract data from xml 
-        filename = xmlDataExtractor.extract_filename(xml_data)
-        xml_output.append(filename)
-
-        noc = xmlDataExtractor.extract_noc(xml_data)
-        xml_output.append(noc)
-
-        trading_name = xmlDataExtractor.extract_trading_name(xml_data)
-        xml_output.append(trading_name)
-
-        licence_number = xmlDataExtractor.extract_licence_number(xml_data)
-        xml_output.append(licence_number)
-
-        operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
-        xml_output.append(operator_short_name)
-
-        operator_code = xmlDataExtractor.extract_operator_code(xml_data)
-        xml_output.append(operator_code)
-
-        service_code = xmlDataExtractor.extract_service_code(xml_data)
-        xml_output.append(service_code)
-
-        line_name = xmlDataExtractor.extract_line_name(xml_data)
-        xml_output.append(line_name)
-
-        public_use = xmlDataExtractor.extract_public_use(xml_data)
-        xml_output.append(public_use)
-
-        operating_days = xmlDataExtractor.extract_operating_days(xml_data)
-        xml_output.append(operating_days)
-
-        service_origin = xmlDataExtractor.extract_service_origin(xml_data)
-        xml_output.append(service_origin)
-
-        service_destination = xmlDataExtractor.extract_service_destination(xml_data)
-        xml_output.append(service_destination)
-
-        operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
-        xml_output.append(operating_period_start_date)
-
-        operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
-        xml_output.append(operating_period_end_date)
-
-        schema_version = xmlDataExtractor.extract_schema_version(xml_data)
-        xml_output.append(schema_version)
-
-        revision_number = xmlDataExtractor.extract_revision_number(xml_data)
-        xml_output.append(revision_number)
-
-        la_code = xmlDataExtractor.extract_la_code(xml_data)
-        xml_output.append(la_code)
+        xml_output = [url]
+        xml_data_extractor = xmlDataExtractor(xml)
+        xml_output.extend(xml_data_extractor.extract_service_level_info())
 
         # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
         if self.stop_level == True:
@@ -1720,6 +1664,45 @@ class xmlDataExtractor:
     def __init__(self, filepath):
         self.root = ET.parse(filepath).getroot()
         self.namespace = self.root.nsmap
+
+    def extract_service_level_info(self):
+        filename = self.extract_filename()
+        noc = self.extract_noc()
+        trading_name = self.extract_trading_name()
+        licence_number = self.extract_licence_number()
+        operator_short_name = self.extract_operator_short_name()
+        operator_code = self.extract_operator_code()
+        service_code = self.extract_service_code()
+        line_name = self.extract_line_name()
+        public_use = self.extract_public_use()
+        operating_days = self.extract_operating_days()
+        service_origin = self.extract_service_origin()
+        service_destination = self.extract_service_destination()
+        operating_period_start_date = self.extract_operating_period_start_date()
+        operating_period_end_date = self.extract_operating_period_end_date()
+        schema_version = self.extract_schema_version()
+        revision_number = self.extract_revision_number()
+        la_code = self.extract_la_code()
+
+        return [
+            filename,
+            noc,
+            trading_name,
+            licence_number,
+            operator_short_name,
+            operator_code,
+            service_code,
+            line_name,
+            public_use,
+            operating_days,
+            service_origin,
+            service_destination,
+            operating_period_start_date,
+            operating_period_end_date,
+            schema_version,
+            revision_number,
+            la_code,
+        ]
 
     def extract_filename(self):
         

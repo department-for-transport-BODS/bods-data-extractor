@@ -68,7 +68,7 @@ def save_otc_db():
 
 def fetch_otc_db():
     """Returns a pandas dataframe of the OTC database (all regions combined)."""
-    print(f'Downloading OTC database...')
+    print('Downloading OTC database...')
     otc_regions = []
 
     for region in OTC_DB_FILES:

@@ -149,9 +149,9 @@ class TimetableExtractor:
 
     def _dataset_filetype(self, response_headers):
         """Determines the filetype of the dataset served up by a dataset url.
-        Returns None if file is not a zip or xml. Else returns '.zip' or '.xml'.
+        Returns None if it can't be determined.
         """
-        pattern = r'(\.zip|\.xml)'
+        pattern = r'(\.\w+)"'
         m = re.search(pattern, response_headers['Content-Disposition'])
         try:
             return m.group(1)
@@ -163,16 +163,17 @@ class TimetableExtractor:
         extracts the data into a Pandas dataframe."""
         response = requests.get(url)
         filetype = self._dataset_filetype(response.headers)
-        if not filetype:
-            print('Invalid dataset file found: "{filetype}", skipping...')
-            return
+
         if filetype == '.zip':
             print(f'Fetching zip file from {url}...')
             txc_df = self._extract_zip(response)
-        else:
+        elif filetype == '.xml':
             print(f'Fetching xml file from {url}...')
             xml = io.BytesIO(response.content)
             txc_df = self._extract_xml(response.url, xml)
+        else:
+            print(f'Invalid dataset file found: "{filetype}", skipping...')
+            return
 
         return txc_df
 

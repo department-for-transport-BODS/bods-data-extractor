@@ -9,7 +9,7 @@ from bods_client.models import timetables
 import lxml.etree as ET
 import xmltodict
 import itertools
-from itertools import zip_longest, product
+from itertools import zip_longest
 import numpy as np
 from pathlib import Path
 from sys import platform
@@ -307,44 +307,75 @@ class TimetableExtractor:
         This extracted data is combined with the metadata of each file, and columns renamed to
         yield analytical ready timetable data.
         """
-
-        orig_cols = ['url', 'id', 'operator_name' ,'description', 'comment', 'status', 'dq_score', 'dq_rag', 'bods_compliance', 'filetype']
-        txc_cols = ['URL', 'DatasetID', 'OperatorName','Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType']
+        orig_cols = [
+            "url",
+            "id",
+            "operator_name",
+            "description",
+            "comment",
+            "status",
+            "dq_score",
+            "dq_rag",
+            "bods_compliance",
+            "filetype",
+        ]
+        txc_cols = [
+            "URL",
+            "DatasetID",
+            "OperatorName",
+            "Description",
+            "Comment",
+            "Status",
+            "dq_score",
+            "dq_rag",
+            "bods_compliance",
+            "FileType",
+        ]
         rename_mapper = {orig: txc for orig, txc in zip(orig_cols, txc_cols)}
 
         extracted_xmls = []
-        for dataset_url in self.metadata['url']:
+        for dataset_url in self.metadata["url"]:
             extracted_xmls.append(self.download_extract_txc(dataset_url))
         xml_table = pd.concat(extracted_xmls)
 
-        self.service_line_extract_with_stop_level_json = self.metadata \
-            .filter(orig_cols, axis=1) \
-            .rename(columns=rename_mapper) \
-            .merge(xml_table, how='outer', on='URL')
+        self.service_line_extract_with_stop_level_json = (
+            self.metadata.filter(orig_cols, axis=1)
+            .rename(columns=rename_mapper)
+            .merge(xml_table, how="outer", on="URL")
+        )
 
-        #explode rows that are always just 1 value to get attributes out of lists
-        self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['NOC'
-                                                                 ,'TradingName'
-                                                                 ,'LicenceNumber'
-                                                                 ,'OperatorShortName'
-                                                                 ,'OperatorCode'
-                                                                 ,'ServiceCode'
-                                                                 ,'PublicUse'
-                                                                 ,'OperatingDays'
-                                                                 ,'Origin'
-                                                                 ,'Destination'
-                                                                 ,'OperatingPeriodStartDate'
-                                                                 ,'OperatingPeriodEndDate'
-                                                                 ])
-        #explode rows that might be mulitple values
-        self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['LineName'])
+        # explode rows that are always just 1 value to get attributes out of lists
+        self.service_line_extract_with_stop_level_json = self.xplode(
+            self.service_line_extract_with_stop_level_json,
+            [
+                "NOC",
+                "TradingName",
+                "LicenceNumber",
+                "OperatorShortName",
+                "OperatorCode",
+                "ServiceCode",
+                "PublicUse",
+                "OperatingDays",
+                "Origin",
+                "Destination",
+                "OperatingPeriodStartDate",
+                "OperatingPeriodEndDate",
+            ],
+        )
+        self.service_line_extract_with_stop_level_json = self.xplode(
+            self.service_line_extract_with_stop_level_json, ['LineName']
+        )
+        self.service_line_extract_with_stop_level_json = self.xplode(
+            self.service_line_extract_with_stop_level_json, ['la_code']
+        )
+        # Why is this needed?
+        self.service_line_extract_with_stop_level_json.to_csv("output.csv")
 
-        #explode rows that might be mulitple values
-        self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['la_code'])
-
-        self.service_line_extract_with_stop_level_json.to_csv('output.csv')
-
-        self.service_line_extract_with_stop_level_json['dq_score'] = self.service_line_extract_with_stop_level_json['dq_score'].str.rstrip('%').astype('float')
+        self.service_line_extract_with_stop_level_json["dq_score"] = (
+            self.service_line_extract_with_stop_level_json["dq_score"]
+            .str.rstrip("%")
+            .astype("float")
+        )
 
         print(f'The following URLs failed: {TimetableExtractor.error_list}')
 
@@ -460,23 +491,14 @@ class TimetableExtractor:
         else:
             TimetableExtractor.download_extract_xml(self, url)
 
-    def xplode(df, explode, zipped=True):
+    def xplode(self, df, cols_to_explode):
+        """Explode out lists in dataframes.
+        Taken from https://stackoverflow.com/a/61390677"""
+        rest = {*df} - {*cols_to_explode}
+        zipped = zip(zip(*map(df.get, rest)), zip(*map(df.get, cols_to_explode)))
+        tups = [tup + exploded for tup, pre in zipped for exploded in zip_longest(*pre)]
 
-        """
-        Explode out lists in dataframes
-        """
-
-        method = zip_longest if zipped else product
-
-        rest = {*df} - {*explode}
-
-        zipped = zip(zip(*map(df.get, rest)), zip(*map(df.get, explode)))
-        tups = [tup + exploded
-         for tup, pre in zipped
-         for exploded in method(*pre)]
-
-        return pd.DataFrame(tups, columns=[*rest, *explode])[[*df]]
-
+        return pd.DataFrame(tups, columns=[*rest, *cols_to_explode])
 
 # =============================================================================
 #       FUNCTIONS FOR EXTRACTING STOP LEVEL DATA

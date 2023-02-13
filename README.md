@@ -483,6 +483,55 @@ https://discord.gg/4mMg5VXm5A
 
 <!-- FAQs -->
 ## FAQs
+This section highlights some frequently asked questions 
+
+<!-- ROADMAP & Limitations -->
+## Roadmap & Limitations
+
+#### What is the difference between a service and a line?
+A “line” is a collection of vehicle journeys (trips) that share some high degree of commonality of route and timings, and which are all known by the same “LINE NAME”. Examples are “1”, “1B”, “100”, “calverton connection”, etc. (there is no requirement for a “LINE NAME” to include a number). 
+A “service” is a collection of lines that together make up a coherent set of vehicle journeys usually running over geographically similar routes although this isn’t a requirement. For example, consider a service “1/1A”, where line “1” operates “A to B direct” and line “1A” operates “A to B via C”, and together they make up the complete service between A and B.
+#### What is the OTC database and how does it relate?
+“OTC” stands for the “Office for the Traffic Commissioner”. This office is responsible for the registering and compliance monitoring of local bus services to ensure that operators meet their statutory obligations. The “OTC database” collects this information together for additional reference with the BDE package.
+#### What are PTI standards? What is the link for more info?
+As part of the DfT Bus Open Data Service (BODS) project, a new TransXChange version 2.4 profile called the UK Passenger Transport Information Profile (TXC-PTI for short) has been commissioned, with the aim of providing a common standard for exchanging UK timetable and schedule data within BODS and similar systems. Please find related links to each standard listed below.
+•	Timetables - UK Public Transport Information Profile v1.1.A (pti.org.uk)
+•	Fares - FareXChange - Home (netex.uk)
+•	AVL - Technical guidance: SIRI-VM - GOV.UK (www.gov.uk)
+•	Versioning - UK Public Transport Information Profile - Versioning in TxC-PTI
+•	Matching - UK Public Transport Information - SIRI SIRI VM & Data Matching (pti.org.uk) 
+#### Does BODS include data for all operators?
+The Bus Services Act 2017 requires operators of local bus services in England to publish data to the Bus Open Data Service.
+####What makes a service code invalid? What are the consequences for including invalid service codes in analysis?
+A service code uniquely identifies a service. If we are supplied with an invalid service code we will be unable to do so.
+###What does it mean if a service has no licence number? What are the consequences?
+?
+###How are operator (and presumably NOC), service, line, timetable, stop (and presumably ATCO) and anything else related?
+UK Public Transport Information Profile v1.1.A (pti.org.uk)
+###How is the service code derived? What would this be called in layman terms?
+Answered above
+###How do the different levels of data download relate to each other? What is an example question I could answer from each type of download - and how might I go about answering it?
+?
+###What does it mean if a timetable for a service code has a duplicate sequence number?
+This would indicate that this timetable is referring to a different line name
+###Is there an easy way for me to obtain all the services which serve one stop?
+Not currently
+###What are the VJ columns? How do they relate to each other, if at all? How do I know which sequence number is for which VJ?
+?
+###How do I know what days a timetable runs?
+Additional column added to display the operating days now in release AP1.1
+###Is it possible to see what non-standard stop level files could not be processed (part of the roadmap caveats)?
+?
+###Why might the BODS/OTC comparison be useful to a user?
+This is because the OTC database will provide an outlook of data entered on BODS to verify any information we have.
+###For services by area OTC/BODS, what if service operates in more than one area, or does this not happen?
+?
+###How is data quality score calculated? If this is explained elsewhere in BODS documentation then we need to link to it.
+Bus operator requirements (dft.gov.uk)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
 
 
 

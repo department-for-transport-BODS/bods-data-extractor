@@ -502,31 +502,31 @@ As part of the DfT Bus Open Data Service (BODS) project, a new TransXChange vers
 •	Matching - UK Public Transport Information - SIRI SIRI VM & Data Matching (pti.org.uk) 
 #### Does BODS include data for all operators?
 The Bus Services Act 2017 requires operators of local bus services in England to publish data to the Bus Open Data Service.
-####What makes a service code invalid? What are the consequences for including invalid service codes in analysis?
+#### What makes a service code invalid? What are the consequences for including invalid service codes in analysis?
 A service code uniquely identifies a service. If we are supplied with an invalid service code we will be unable to do so.
 ###What does it mean if a service has no licence number? What are the consequences?
 ?
-###How are operator (and presumably NOC), service, line, timetable, stop (and presumably ATCO) and anything else related?
+### How are operator (and presumably NOC), service, line, timetable, stop (and presumably ATCO) and anything else related?
 UK Public Transport Information Profile v1.1.A (pti.org.uk)
 ###How is the service code derived? What would this be called in layman terms?
 Answered above
 ###How do the different levels of data download relate to each other? What is an example question I could answer from each type of download - and how might I go about answering it?
 ?
-###What does it mean if a timetable for a service code has a duplicate sequence number?
+### What does it mean if a timetable for a service code has a duplicate sequence number?
 This would indicate that this timetable is referring to a different line name
-###Is there an easy way for me to obtain all the services which serve one stop?
+### Is there an easy way for me to obtain all the services which serve one stop?
 Not currently
 ###What are the VJ columns? How do they relate to each other, if at all? How do I know which sequence number is for which VJ?
 ?
-###How do I know what days a timetable runs?
+### How do I know what days a timetable runs?
 Additional column added to display the operating days now in release AP1.1
-###Is it possible to see what non-standard stop level files could not be processed (part of the roadmap caveats)?
+### Is it possible to see what non-standard stop level files could not be processed (part of the roadmap caveats)?
 ?
-###Why might the BODS/OTC comparison be useful to a user?
+### Why might the BODS/OTC comparison be useful to a user?
 This is because the OTC database will provide an outlook of data entered on BODS to verify any information we have.
 ###For services by area OTC/BODS, what if service operates in more than one area, or does this not happen?
 ?
-###How is data quality score calculated? If this is explained elsewhere in BODS documentation then we need to link to it.
+### How is data quality score calculated? If this is explained elsewhere in BODS documentation then we need to link to it.
 Bus operator requirements (dft.gov.uk)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

@@ -18,6 +18,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
          ref: Feature-AA-Automated-Testing
       - name: Set up Python ${{ matrix.python-version }}

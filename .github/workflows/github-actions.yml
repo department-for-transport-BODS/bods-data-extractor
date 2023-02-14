@@ -33,5 +33,5 @@ jobs:
         run: |
           pip install pytest
           pip install pytest-cov
-          pytest bods-data-extractor/src/BODSDataExtractor/example.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+          pytest bods-test.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
       

@@ -112,6 +112,7 @@ To help you when using the data, we've put together a list of useful terms and t
 |OTC Database| OTC stands for Office of the Traffic Commissioner. The OTC database contains information for every registered bus service in the UK. Please see [below](#otc-database) for information on how the database is used within the package.|
 |Siri-VM | Siri-VM is an XML standard for exchanging real time bus location information. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
 | TransXChange | TransXChange is the UK nationwide standard for exchanging bus schedules and related data. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
+| XML Files | An XML (Extensible Markup Language) file is a plain text file which describes the structure, storage and transportation of data using tags. Using the API you might get multiple XML files per timetable, but with the BODS Data Extractor these are combined into one easy-to-work-with extract. The URL is also supplied if you want to view the original XML. |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

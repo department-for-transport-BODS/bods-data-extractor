@@ -310,6 +310,14 @@ class TimetableExtractor:
                             
                             operating_days = xmlDataExtractor.extract_operating_days(xml_data)
                             xml_output.append(operating_days)
+                            
+
+                            block_provided= xmlDataExtractor.extract_blocks(xml_data)
+                            xml_output.append(block_provided)
+
+
+                            tracks_provided=xmlDataExtractor.extract_tracks(xml_data)
+                            xml_output.append(tracks_provided)
 
 
                             service_origin = xmlDataExtractor.extract_service_origin(xml_data)
@@ -377,11 +385,11 @@ class TimetableExtractor:
         #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
         if self.stop_level == True:
             output_df = pd.DataFrame(output
-                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
+                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays','BlocksProvided', 'TracksProvided', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
                                  )
         else:
             output_df = pd.DataFrame(output
-                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
+                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays','BlocksProvided', 'TracksProvided', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
                                      )
         return output_df
 
@@ -574,6 +582,8 @@ class TimetableExtractor:
                                                                  ,'ServiceCode'
                                                                  ,'PublicUse'
                                                                  ,'OperatingDays'
+                                                                 ,'BlocksProvided'
+                                                                 ,"TracksProvided"
                                                                  ,'Origin'
                                                                  ,'Destination'
                                                                  ,'OperatingPeriodStartDate'
@@ -2075,6 +2085,43 @@ class xmlDataExtractor:
         public_use = [i.text for i in data]
         
         return public_use
+    
+    def extract_blocks(self):                
+        '''
+        Extracts the block information from an xml file in a given location with a known namespace.
+        Namespace can be found in constants.py and depends on if data is timetable or fares data
+        
+        '''
+        data=self.root.findall("VehicleJourneys//VehicleJourney/Operational/Block" , self.namespace)
+        #If there is no block information 
+        if data==[]:
+            block_provided=False
+        #If there is block information 
+        else:
+            block_provided=True
+
+        block_provided=[block_provided]
+
+        return block_provided
+
+
+    def extract_tracks(self):                     
+        '''
+        Extracts the block information from an xml file in a given location with a known namespace.
+        Namespace can be found in constants.py and depends on if data is timetable or fares data
+        
+        '''
+        data=self.root.findall("RouteSections//RouteSection/RouteLink/Track" , self.namespace)
+        #If there is no track information 
+        if data==[]:
+            tracks_provided=False
+        #If there is track information 
+        else:
+            tracks_provided=True
+
+        tracks_provided=[tracks_provided]
+
+        return tracks_provided
     
     def extract_operating_days(self):
         

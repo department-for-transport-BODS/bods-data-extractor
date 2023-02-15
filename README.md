@@ -485,12 +485,6 @@ https://discord.gg/4mMg5VXm5A
 ## FAQs
 This section highlights some frequently asked questions 
 
-Document# New 
-This section highlights some frequently asked questions 
-
-<!-- FAQ-->
-### FAQ
-
 #### What is the difference between a service and a line?
 A “line” is a collection of vehicle journeys (trips) that share some high degree of commonality of route and timings, and which are all known by the same “LINE NAME”. Examples are “1”, “1B”, “100”, “calverton connection”, etc. (there is no requirement for a “LINE NAME” to include a number). 
 

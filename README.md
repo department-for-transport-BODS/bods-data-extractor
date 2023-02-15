@@ -34,6 +34,7 @@
 - [About The Project](#about-the-project)
   - [Built With](#built-with)
   - [Useful Links](#useful-links)
+  - [Glossary of Terms](#glossary-of-terms)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)

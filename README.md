@@ -96,6 +96,7 @@ There are a number of different documents and data standards that are used as pa
 - [Location Data Standard](https://www.gov.uk/government/publications/technical-guidance-publishing-location-data-using-the-bus-open-data-service-siri-vm/technical-guidance-siri-vm#the-siri-vm-standard)
 - [Guide to Matching Location and Timetables Data](https://pti.org.uk/system/files/files/SIRI_VM_PTI_Data_Matching_v1-0.pdf)
 - [Fares Data Standard](http://netex.uk/farexchange/)
+- [BODS API Documentation](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=api)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -105,6 +106,7 @@ To help you when using the data, we've put together a list of useful terms and t
 
 | Term    | Definition |
 |:-------|:-----------|
+|API / API Key | An API (Application Programming Interface) is a way for two different computer programmes to communicate with each other. All data within the Bus Open Data Service can be queried and accessed via API calls. A different API call is required for each type of data (timetables, bus location, fares). Use of the APIs requires an API key which can be obtained from your [BODS Account Settings](https://data.bus-data.dft.gov.uk/account/settings/). This key is linked to your account and should not be shared. If you have not already done so you will need to [register](https://data.bus-data.dft.gov.uk/account/signup/) in order to create your API key. |
 |ATCO Code| ATCO (Association of Transport Co-ordinating Officers) codes refer to the unique identifiers used for individual UK bus stops. The first 3 numbers denote the authority responsible for the stop. The fourth character is a 0 (zero). The remaining characters to a maximum of 8 are alpha-numeric determined locally. BODS Data Extractor allows you to filter results on the ATCO admin authority (the first 3 numbers). Please see fine-tuning section [below](#how-to-fine-tune-your-results-using-additional-parameters) for more detail on how to do this.|
 |Data Field Definitions | For definitions of each field within the data returned, please see [BODS Data Catalogue](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=datacatalogue).
 | Data Set/Feed | Operators must provide a complete set of data regarding local bus services. Please see [BODS Quick Start Guidance](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=quickstart) for more information. |

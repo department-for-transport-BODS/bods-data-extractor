@@ -32,6 +32,9 @@ from shapely.geometry import Point
 from geopandas import GeoDataFrame
 import plotly.express as px
 import plotly.io as pio
+from typing import List
+from dataclasses import dataclass
+
 
 class TimetableExtractor:
 
@@ -2004,3 +2007,63 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+
+
+@dataclass
+class JourneyPatternTimingLink:
+    id: str
+    FromStop: dict
+    To: dict
+    RouteLinkRef: str
+    RunTime: str
+
+@dataclass
+class JourneyPatternSection:
+    id: str
+    JourneyPatternTimingLink: List[JourneyPatternTimingLink]
+
+@dataclass
+class Route:
+    id: str
+    description: str
+    route_section_ref: str
+
+@dataclass
+class RouteSection:
+    id: str
+    route_link_id: str
+    from_stop_point_ref: str
+    to_stop_point_ref: str
+
+@dataclass
+class Location:
+    Longitude: str
+    Latitude: str
+
+@dataclass
+class AnnotatedStopPointRef:
+    StopPointRef: str
+    CommonName: str
+    Location: Location
+
+@dataclass
+class StopPoints:
+    AnnotatedStopPointRef: AnnotatedStopPointRef
+
+@dataclass
+class TicketMachine:
+    JourneyCode: str
+
+@dataclass
+class Operational:
+    TicketMachine: TicketMachine
+
+@dataclass
+class VehicleJourney:
+    OperatorRef: str
+    Operational: Operational
+    VehicleJourneyCode: str
+    ServiceRef: str
+    LineRef: str
+    JourneyPatternRef: str
+    DepartureTime: str

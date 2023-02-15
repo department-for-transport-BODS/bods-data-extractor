@@ -2107,7 +2107,7 @@ class xmlDataExtractor:
 
     def extract_tracks(self):                     
         '''
-        Extracts the block information from an xml file in a given location with a known namespace.
+        Extracts the track information from an xml file in a given location with a known namespace.
         Namespace can be found in constants.py and depends on if data is timetable or fares data
         
         '''

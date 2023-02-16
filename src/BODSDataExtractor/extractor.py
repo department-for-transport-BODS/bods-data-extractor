@@ -350,8 +350,9 @@ class TimetableExtractor:
         self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(
             ["la_code"], axis=1
         )
+
         if self.stop_level:
-            self.service_line_extract_with_stop_level_json.drop(
+            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(
                 ["journey_pattern_json", "vehicle_journey_json", "services_json"], axis=1
             )
 

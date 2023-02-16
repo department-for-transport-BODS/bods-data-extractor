@@ -108,13 +108,8 @@ class TimetableExtractor:
         params = timetables.TimetableParams(limit=self.limit,
                                             nocs=self.nocs,
                                             status=self.status,
+                                            admin_areas=self.atco_code,
                                             search=self.search)
-        """Below, handles bug with the BODS Timetable API. Bug will only use the last
-        admin area provided by the iterable. Converting to delimited string ensures
-        that all the admin_areas are used in the API query."""
-        if self.atco_code:
-            params.admin_areas = ','.join(self.atco_code)
-
         api_response = bods.get_timetable_datasets(params=params)
         return self._handle_api_response(api_response)
 

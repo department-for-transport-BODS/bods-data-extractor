@@ -485,6 +485,16 @@ https://discord.gg/4mMg5VXm5A
 ## FAQs
 This section highlights some frequently asked questions 
 
+#### What would a high level overview of using BODS compared to the BODS Data Extractor Package look like?
+##### Using BODS
+![BODS HIGH LEVEL](https://user-images.githubusercontent.com/114913914/219327718-c56a3e1c-1d63-436a-8794-6760c0ab9f63.jpg)
+
+##### Using the BODS Data Extractor Package
+
+
+![high level overview BDE](https://user-images.githubusercontent.com/114913914/219329596-0fe32c64-5373-4c24-b103-423fef00f12f.jpg)
+
+
 #### What is the difference between a service and a line?
 A “line” is a collection of vehicle journeys (trips) that share some high degree of commonality of route and timings, and which are all known by the same “LINE NAME”. Examples are “1”, “1B”, “100”, “calverton connection”, etc. (there is no requirement for a “LINE NAME” to include a number). 
 

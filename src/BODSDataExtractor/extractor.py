@@ -6,6 +6,8 @@ import io
 import os
 from bods_client.client import BODSClient
 from bods_client.models import timetables
+from bods_client.models.base import APIError as BodsApiError
+from bods_client.models.timetables import TimetableResponse
 import lxml.etree as ET
 import xmltodict
 import itertools
@@ -15,6 +17,7 @@ from pathlib import Path
 from sys import platform
 import re
 import concurrent.futures
+from typing import Union
 # try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
 try:
     import BODSDataExtractor.otc_db_download as otc_db_download
@@ -80,6 +83,23 @@ class TimetableExtractor:
 
         return atco_codes
 
+    def _handle_api_response(self, response: Union[TimetableResponse, BodsApiError]):
+        """Handle and validate the API response. Inform the user of any issues."""
+        if type(response) is BodsApiError:
+            if response.status_code == 401:
+                self.metadata = None
+                print('Invalid API token used.')
+                return
+            else:
+                raise ValueError(repr(response))
+            
+        if type(response) is TimetableResponse and response.count == 0:
+            self.metadata = None
+            print('No results returned from BODS Timetable API. Please check input parameters.')
+            return
+        
+        return response
+
     def _get_timetable_datasets(self):
         """Queries the BODS Timetable API as per the parameters set at instance
         initialisation.
@@ -94,7 +114,9 @@ class TimetableExtractor:
         that all the admin_areas are used in the API query."""
         if self.atco_code:
             params.admin_areas = ','.join(self.atco_code)
-        return bods.get_timetable_datasets(params=params)
+
+        api_response = bods.get_timetable_datasets(params=params)
+        return self._handle_api_response(api_response)
 
     def pull_timetable_data(self):
         """Creates the timetable dataset metadata dataframe and assigns to
@@ -105,12 +127,8 @@ class TimetableExtractor:
         """
         print(f"Fetching timetable metadata for up to {self.limit:,} datasets...")
         timetable_datasets = self._get_timetable_datasets()
-
-        if timetable_datasets.count == 0:
-            self.metadata = None
-            print('No results returned from BODS Timetable API. Please check input parameters.')
+        if not timetable_datasets:
             return
-
         self.metadata = self.create_metadata_df(timetable_datasets)
 
         if self.bods_compliant == True:

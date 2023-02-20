@@ -59,6 +59,7 @@
     - [And more!](#and-more)
 - [Contact / Contribute](#contact--contribute)
   - [Contact the Bus Open Data Service](#contact-the-bus-open-data-service)
+- [FAQs](#FAQs)  
 - [License](#license)
 
 <!-- ABOUT THE PROJECT -->
@@ -494,6 +495,68 @@ https://discord.gg/4mMg5VXm5A
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- FAQs -->
+## FAQs
+This section highlights some frequently asked questions 
+
+#### What would a high level overview of using BODS compared to the BODS Data Extractor Package look like?
+##### Using BODS
+![BODS HIGH LEVEL](https://user-images.githubusercontent.com/114913914/219327718-c56a3e1c-1d63-436a-8794-6760c0ab9f63.jpg)
+
+##### Using the BODS Data Extractor Package
+
+
+![high level overview BDE](https://user-images.githubusercontent.com/114913914/219329596-0fe32c64-5373-4c24-b103-423fef00f12f.jpg)
+
+
+#### What is the difference between a service and a line?
+A “line” is a collection of vehicle journeys (trips) that share some high degree of commonality of route and timings, and which are all known by the same “LINE NAME”. Examples are “1”, “1B”, “100”, “calverton connection”, etc. (there is no requirement for a “LINE NAME” to include a number). 
+
+A “service” is a collection of lines that together make up a coherent set of vehicle journeys usually running over geographically similar routes although this isn’t a requirement. For example, consider a service “1/1A”, where line “1” operates “A to B direct” and line “1A” operates “A to B via C”, and together they make up the complete service between A and B.
+#### What is the OTC database and how does it relate?
+“OTC” stands for the “Office for the Traffic Commissioner”. This office is responsible for the registering and compliance monitoring of local bus services to ensure that operators meet their statutory obligations. The “OTC database” collects this information together for additional reference with the BDE package.
+#### What are PTI standards? What is the link for more info?
+As part of the DfT Bus Open Data Service (BODS) project, a new TransXChange version 2.4 profile named the UK Passenger Transport Information Profile (TXC-PTI for short) has been commissioned. These standards aim to provide a common standard for exchanging UK timetable and schedule data within BODS and similar systems. Please find related links to each standard listed below.
+
+•	[Timetables](https://pti.org.uk/system/files/files/TransXChange_UK_PTI_Profile_v1.1.A.pdf)\
+•	[Fares](http://netex.uk/farexchange/)\
+•	[AVL](https://www.gov.uk/government/publications/technical-guidance-publishing-location-data-using-the-bus-open-data-service-siri-vm/technical-guidance-siri-vm)\
+•	[Versioning](https://pti.org.uk/system/files/files/TransXChange%20UK%20PTI%20Profile%20-%20Versioning%20Application%20Note%20v1.0.pdf)\
+•	[Matching](https://pti.org.uk/system/files/files/SIRI_VM_PTI_Data_Matching_v1-0.pdf)
+#### Does BODS include data for all operators?
+The Bus Services Act 2017 requires operators of local bus services in England to publish data to the Bus Open Data Service.
+
+#### What makes a service code invalid? What are the consequences for including invalid service codes in analysis?
+A valid service code consists of the following for registered services:\
+•	Two characters as the beginning.\
+•	The tenth element of the string must be a colon.\
+•	 In total we should have more than 10 characters\
+
+For unregistered services:\
+•	The first two characters must be “UZ”\
+•	After the colon we must have an integer
+
+If we are supplied with an invalid service code we will be unable to uniquely identify a service.
+
+
+### Why might the BODS/OTC comparison be useful to a user?
+This is because the OTC database will provide a general outlook of data entered on BODS to verify any information we have.
+
+
+
+### How is data quality score calculated? If this is explained elsewhere in BODS documentation then we need to link to it.
+The data quality score is calculated by accounting for both critical and advisory observations. An example of an advisory observation is a missing block number. A more detailed description can be found here:
+
+[Data Quality Documentation](https://publish.bus-data.dft.gov.uk/guidance/score-description/)
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
 
 
 

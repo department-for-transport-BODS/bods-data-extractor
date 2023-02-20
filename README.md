@@ -1,4 +1,4 @@
-
+<a name="readme-top"></a>
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -34,6 +34,7 @@
 - [About The Project](#about-the-project)
   - [Built With](#built-with)
   - [Useful Links](#useful-links)
+  - [Glossary of Terms](#glossary-of-terms)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -96,6 +97,7 @@ There are a number of different documents and data standards that are used as pa
 - [Location Data Standard](https://www.gov.uk/government/publications/technical-guidance-publishing-location-data-using-the-bus-open-data-service-siri-vm/technical-guidance-siri-vm#the-siri-vm-standard)
 - [Guide to Matching Location and Timetables Data](https://pti.org.uk/system/files/files/SIRI_VM_PTI_Data_Matching_v1-0.pdf)
 - [Fares Data Standard](http://netex.uk/farexchange/)
+- [BODS API Documentation](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=api)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -105,14 +107,16 @@ To help you when using the data, we've put together a list of useful terms and t
 
 | Term    | Definition |
 |:-------|:-----------|
+|API / API Key | An API (Application Programming Interface) is a way for two different computer programmes to communicate with each other. All data within the Bus Open Data Service can be queried and accessed via API calls. A different API call is required for each type of data (timetables, bus location, fares). Use of the APIs requires an API key which can be obtained from your [BODS Account Settings](https://data.bus-data.dft.gov.uk/account/settings/). This key is linked to your account and should not be shared. If you have not already done so you will need to [register](https://data.bus-data.dft.gov.uk/account/signup/) in order to create your API key. |
 |ATCO Code| ATCO (Association of Transport Co-ordinating Officers) codes refer to the unique identifiers used for individual UK bus stops. The first 3 numbers denote the authority responsible for the stop. The fourth character is a 0 (zero). The remaining characters to a maximum of 8 are alpha-numeric determined locally. BODS Data Extractor allows you to filter results on the ATCO admin authority (the first 3 numbers). Please see fine-tuning section [below](#how-to-fine-tune-your-results-using-additional-parameters) for more detail on how to do this.|
 |Data Field Definitions | For definitions of each field within the data returned, please see [BODS Data Catalogue](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=datacatalogue).
 | Data Set/Feed | Operators must provide a complete set of data regarding local bus services. Please see [BODS Quick Start Guidance](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=quickstart) for more information. |
 |NeTEx | NeTEx is a CEN standard that can be used to represent many aspects of a multi-modal transport network. The UK profile includes elements related to fares for buses. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
-| NOC | NOC stands for National Operator Code. Each bus operator has its own identifying code, consisting of four letters. To find the NOC for the operators you are interested in, you can browse or download the NOC Database from [Traveline](https://www.travelinedata.org.uk/traveline-open-data/transport-operations/about-2/). BODS Data Extractor also allows you to filter results by NOC, please see fine-tuning section [below](#how-to-fine-tune-your-results-using-additional-parameters) for more detail. |
+| NOC | NOC stands for National Operator Code. Each bus operator has at least one identifying code, consisting of four letters, but can have multiple. To find the NOCs for the operators you are interested in, you can browse or download the NOC Database from [Traveline](https://www.travelinedata.org.uk/traveline-open-data/transport-operations/about-2/). BODS Data Extractor also allows you to filter results by NOC, please see fine-tuning section [below](#how-to-fine-tune-your-results-using-additional-parameters) for more detail. |
 |OTC Database| OTC stands for Office of the Traffic Commissioner. The OTC database contains information for every registered bus service in the UK. Please see [below](#otc-database) for information on how the database is used within the package.|
 |Siri-VM | Siri-VM is an XML standard for exchanging real time bus location information. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
 | TransXChange | TransXChange is the UK nationwide standard for exchanging bus schedules and related data. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
+| XML Files | An XML (Extensible Markup Language) file is a plain text file which describes the structure, storage and transportation of data using tags. Using the API you might get multiple XML files per timetable, but with the BODS Data Extractor these are combined into one easy-to-work-with extract. The URL is also supplied if you want to view the original XML. |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

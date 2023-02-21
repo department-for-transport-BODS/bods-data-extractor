@@ -2354,3 +2354,85 @@ class VehicleJourney:
     LineRef: str
     JourneyPatternRef: str
     DepartureTime: str
+
+@dataclass
+class OutboundDescription:
+    Description: str
+    
+@dataclass
+class InboundDescription:
+    Description: str
+
+@dataclass
+class Lines:
+    LineName: str
+    OutboundDescription: OutboundDescription
+    InboundDescription: InboundDescription
+    _id: str
+    
+@dataclass
+class OperatingPeriod:
+    StartDate: str
+
+@dataclass
+class DaysOfWeek:
+    day : str
+    
+@dataclass
+class DaysOfNonOperation:
+    day : str
+
+@dataclass
+class RegularDayType:
+    DaysOfWeek: [DaysOfWeek]
+    
+@dataclass
+class BankHolidayOperation:
+    DaysOfNonOperation: [DaysOfNonOperation]
+
+@dataclass
+class OperatingProfile:
+    RegularDayType: RegularDayType
+    DaysOfNonOperation: DaysOfNonOperation
+
+@dataclass
+class JourneyPattern:
+    DestinationDisplay: str
+    OperatorRef: str
+    Direction: str
+    RouteRef: str
+    JourneyPatternSectionRefs: str
+    _id:str
+    
+@dataclass
+class StandardService:
+    Origin: str
+    Destination: str
+    UseAllPoints: bool
+    JourneyPattern	: [JourneyPattern]
+
+@dataclass
+class Service:
+    ServiceCode:str
+    Lines: Lines
+    OperatingPeriod: OperatingPeriod
+    OperatingProfile: OperatingProfile
+    TicketMachineServiceCode: str
+    RegisteredOperatorRef: str
+    PublicUse: bool
+    StandardService: StandardService
+    _CreationDateTime: str
+    _ModificationDateTime: str
+    _Modification:str
+    _RevisionNumber: int
+
+
+import xmltodict
+
+with open(r'CHAM.xml', 'r', encoding='utf-8') as file:
+    xml_text = file.read()
+    xml_json = xmltodict.parse(xml_text, process_namespaces=False)
+    xml_root = xml_json['TransXChange']
+    services_json = xml_root['Services']['Service']
+    vehicle_journey_json = xml_root['VehicleJourneys']['VehicleJourney']
+    journey_pattern_json = xml_root['JourneyPatternSections']['JourneyPatternSection']

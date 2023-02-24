@@ -12,7 +12,7 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
-# edit this
+# edit thi
 api = os.environ.get('bods_api_key')
 
 my_bus_data_object = TimetableExtractor(api_key=api

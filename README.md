@@ -29,7 +29,7 @@
 
 
 
-# Table of contents t
+# Table of contents
 
 - [About The Project](#about-the-project)
   - [Built With](#built-with)

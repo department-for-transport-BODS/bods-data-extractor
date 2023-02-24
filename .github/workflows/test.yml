@@ -11,7 +11,7 @@ jobs:
     steps:
     
     - name: Install dependencies
-      run: pip install -r requirements.txt 
+      run: pip install requirements.txt 
     
     - name: Checkout code
       uses: actions/checkout@v2

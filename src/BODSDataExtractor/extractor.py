@@ -2114,6 +2114,7 @@ class xmlDataExtractor:
 
         return public_use
 
+
     def extract_operating_days(self):
 
         '''
@@ -2207,6 +2208,11 @@ class xmlDataExtractor:
         else:
             # print(sortit)
             operating_days = sortit[0][0] + "-" + sortit[-1][0]
+
+        if operating_days[-1:] == ",":
+            operating_days = operating_days[:-1]
+        else:
+            pass
 
         operating_days = [operating_days]
 

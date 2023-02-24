@@ -11,9 +11,9 @@ jobs:
     steps:
     
     - name: Install dependencies
-      run: |
-          python -m pip install --upgrade pip setuptools wheel ez_setup
-          pip install -r .github/requirements.txt
+      uses: py-actions/py-dependency-install@v4
+      with:
+        path: "requirements.txt"
     
     - name: Checkout code
       uses: actions/checkout@v2

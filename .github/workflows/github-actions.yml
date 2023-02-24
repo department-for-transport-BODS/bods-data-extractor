@@ -3,35 +3,28 @@ run-name: ${{ github.actor }} is testing the branch using GitHub Actions
 
 on:
   pull_request:
-    branches:
-    - Feature-AA-Automated-Testing
-    - 'release**'
+    branches: [Feature-AA-Automated-Testing]
+
 
 
 jobs:
-  build:
-  
+  test:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        python-version: ["3.9"]
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - name: set up python
+  
+        uses: actions/setup-node@v2
         with:
-         ref: Feature-AA-Automated-Testing
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.9"
+        
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel ez_setup
-          pip install -r requirements.txt
-      - name: Test with pytest
-        run: |
-          pip install pytest
-          pip install pytest-cov
-          pytest bods-test.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+        run: pip install -r requirements.txt
+        
+      - name: Run Tests
+        run: pytest tests/
+        
+      - name: Run Tests
+        run: python bods-data-extractor/src/BODSDataExtractor/example.py
       

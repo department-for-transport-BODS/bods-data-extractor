@@ -1,0 +1,18 @@
+name: Test Code
+
+on:
+  push:
+    branches:
+      - Feature-AA-Automated-Testing
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Test code
+      run: python bods-data-extractor/src/BODSDataExtractor/example.py
+
+
+    branches: [Feature-AA-Automated-Testing]

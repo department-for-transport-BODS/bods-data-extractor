@@ -13,7 +13,7 @@ jobs:
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v4
       with:
-        path: "requirements.txt"
+        path: ".github/requirements.txt"
     
     - name: Checkout code
       uses: actions/checkout@v2

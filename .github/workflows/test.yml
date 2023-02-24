@@ -7,13 +7,14 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     
     - name: Install dependencies
-      run: pip install -r requirements.txt
+      run: pip install -r requirements.txt 
     
     - name: Checkout code
       uses: actions/checkout@v2
+      
     - name: Test code
       run: python src/BODSDataExtractor/example.py

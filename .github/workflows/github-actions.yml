@@ -17,8 +17,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: set up python
   
-      - uses: actions/setup-node@v2
-      - with:
+        uses: actions/setup-node@v2
+        with:
           python-version: "3.9"
         
       - name: Install dependencies
@@ -26,4 +26,3 @@ jobs:
         
       - name: Run Tests
         run: python bods-data-extractor/src/BODSDataExtractor/example.py
-      

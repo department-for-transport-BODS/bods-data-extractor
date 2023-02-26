@@ -2,8 +2,10 @@ name: Unit Testing
 run-name: ${{ github.actor }} is testing the branch using GitHub Actions
 
 on:
-  pull_request:
-    branches: [Feature-AA-Automated-Testing]
+  push:
+    branches: 
+    - Feature-AA-Automated-Testing
+    
 
 
 
@@ -21,9 +23,6 @@ jobs:
         
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
-      - name: Run Tests
-        run: pytest tests/
         
       - name: Run Tests
         run: python bods-data-extractor/src/BODSDataExtractor/example.py

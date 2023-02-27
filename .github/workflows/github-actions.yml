@@ -22,7 +22,7 @@ jobs:
           python-version: "3.9"
         
       - name: Install dependencies
-        run: conda install -r requirements.txt
+        run: conda install --yes --file requirements.txt
         
       - name: Run Full Extract Test
         run: python bods-data-extractor/src/BODSDataExtractor/full_extract_test.py

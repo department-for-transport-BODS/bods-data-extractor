@@ -73,7 +73,7 @@ class InboundDescription:
 class Lines:
     LineName: str
     OutboundDescription: OutboundDescription
-    InboundDescription: InboundDescription
+    InboundDescription: Optional[InboundDescription]
     _id: Optional[str] 
 
 
@@ -103,8 +103,11 @@ class OperatingProfile:
     #DaysOfNonOperation: Optional[Dict[str,DaysOfNonOperation]]
     BankHolidayOperation:Dict[str,BankHolidayOperation]
 
+
+
+
 @dataclass
-class VehicleJourney:
+class VehicleJourneys:
     OperatorRef: str
     Operational: Operational
     VehicleJourneyCode: str
@@ -113,6 +116,11 @@ class VehicleJourney:
     JourneyPatternRef: str
     DepartureTime: str
     OperatingProfile: Optional[OperatingProfile]
+    
+    
+@dataclass
+class VehicleJourney:
+    VehicleJourneys: Dict[str,VehicleJourneys]
 
 @dataclass
 class JourneyPattern:
@@ -137,7 +145,7 @@ class Service:
     ServiceCode: str
     Lines: Dict[str,Lines]
     OperatingPeriod: OperatingPeriod
-    OperatingProfile: OperatingProfile
+    OperatingProfile: Optional[OperatingProfile]
     TicketMachineServiceCode: Optional[str] = field(init=False)
     RegisteredOperatorRef: str
     PublicUse: str
@@ -156,7 +164,8 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     xml_json = xmltodict.parse(xml_text, process_namespaces=False)
     xml_root = xml_json['TransXChange']
     services_json = xml_root['Services']['Service']
-    
+    vehicle_journey_json = xml_root['VehicleJourneys']['VehicleJourney']
+    journey_pattern_json = xml_root['JourneyPatternSections']['JourneyPatternSection']
     
     # #Checking attributes in class with elements taken out of JSON
     # for attribute_name in Service.__annotations__:
@@ -168,40 +177,13 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
             
     
     
-    #debug from here
+    
     serviceobject = from_dict(data_class=Service, data=services_json)
     
+    vehicle_journey= from_dict(data_class=VehicleJourney, data=vehicle_journey_json)
     
+    journey_pattern_Object= from_dict(data_class=JourneyPatternTimingLink, data=journey_pattern_json)
     
-    
-    
-    
-    serviceobject=dict_to_object(services_json, Service)
-    
-    #change attribute name to class item
-    
-    print(serviceobject.__dict__.items())
-    
-    
-    for attribute_name, attribute_value in serviceobject.__dict__.items():
-        
-        print(attribute_name, ":", type(attribute_value))
-        
-        
-        
-        if str(type(attribute_value))=="<class 'dict'>":
-            print("populate further")
-            
-            new_object=attribute_name+"object"
-            
-            
-           # for _, cls in inspect.getmembers(inspect.getmodule()):
-                
-              #  if is_dataclass(cls) and cls.name == attribute_name:
-               #     print("is dataclass")
-                #    print (cls.name)
-            
-            
-            new_object=dict_to_object(attribute_value, attribute_name)
+
     
     

@@ -1,34 +1,21 @@
 
 import inspect
-from dataclasses import dataclass,field,is_dataclass
-from typing import List,Dict,Optional
+from dataclasses import dataclass, field, is_dataclass
+from typing import List, Dict, Optional
 from dacite import from_dict
+import xmltodict
 
 
 def dict_to_object(dictionary,class_to_convert):
     return class_to_convert(**dictionary)
 
 
-
-
-@dataclass
-class JourneyPatternTimingLink:
-    id: str
-    FromStop: dict
-    To: dict
-    RouteLinkRef: str
-    RunTime: str
-
-@dataclass
-class JourneyPatternSection:
-    id: str
-    JourneyPatternTimingLink: List[JourneyPatternTimingLink]
-
 @dataclass
 class Route:
     id: str
     description: str
     route_section_ref: str
+
 
 @dataclass
 class RouteSection:
@@ -37,10 +24,12 @@ class RouteSection:
     from_stop_point_ref: str
     to_stop_point_ref: str
 
+
 @dataclass
 class Location:
     Longitude: str
     Latitude: str
+
 
 @dataclass
 class AnnotatedStopPointRef:
@@ -48,13 +37,16 @@ class AnnotatedStopPointRef:
     CommonName: str
     Location: Location
 
+
 @dataclass
 class StopPoints:
     AnnotatedStopPointRef: AnnotatedStopPointRef
 
+
 @dataclass
 class TicketMachine:
     JourneyCode: str
+
 
 @dataclass
 class Operational:
@@ -64,10 +56,12 @@ class Operational:
 @dataclass
 class OutboundDescription:
     Description: str
-    
+
+
 @dataclass
 class InboundDescription:
     Description: str
+
 
 @dataclass
 class Lines:
@@ -81,21 +75,26 @@ class Lines:
 class OperatingPeriod:
     StartDate: str
 
+
 @dataclass
 class DaysOfWeek:
     day : str
-    
+
+
 @dataclass
 class DaysOfNonOperation:
     day : str
 
+
 @dataclass
 class RegularDayType:
     DaysOfWeek: Optional[List[DaysOfWeek]]
-    
+
+
 @dataclass
 class BankHolidayOperation:
     DaysOfNonOperation: Optional[List[DaysOfNonOperation]]
+
 
 @dataclass
 class OperatingProfile:
@@ -104,10 +103,8 @@ class OperatingProfile:
     BankHolidayOperation:Dict[str,BankHolidayOperation]
 
 
-
-
 @dataclass
-class VehicleJourneys:
+class VehicleJourney:
     OperatorRef: str
     Operational: Operational
     VehicleJourneyCode: str
@@ -116,11 +113,12 @@ class VehicleJourneys:
     JourneyPatternRef: str
     DepartureTime: str
     OperatingProfile: Optional[OperatingProfile]
-    
-    
+
+
 @dataclass
-class VehicleJourney:
-    VehicleJourneys: Dict[str,VehicleJourneys]
+class VehicleJourneys:
+    VehicleJourney: List[VehicleJourney]
+
 
 @dataclass
 class JourneyPattern:
@@ -130,7 +128,8 @@ class JourneyPattern:
     RouteRef: str
     JourneyPatternSectionRefs: str
     _id:Optional[str]
-    
+
+
 @dataclass
 class StandardService:
     Origin: str
@@ -138,9 +137,8 @@ class StandardService:
     UseAllPoints: Optional[str]
     JourneyPattern	: List[JourneyPattern]
 
-@dataclass
-#define default values here
 
+@dataclass
 class Service:
     ServiceCode: str
     Lines: Dict[str,Lines]
@@ -156,16 +154,48 @@ class Service:
     _RevisionNumber: Optional[int]  = field(init=False)
 
 
+@dataclass
+class From:
+    Activity: str
+    StopPointRef: str
+    TimingStatus: str
 
-import xmltodict
+
+@dataclass
+class To:
+    StopPointRef: str
+    TimingStatus: str
+
+
+@dataclass
+class JourneyPatternTimingLink:
+    id: str
+    From: From
+    To: To
+    RouteLinkRef: str
+    RunTime: str
+
+
+@dataclass
+class JourneyPatternSection:
+    # running into an issue here because the 'id' in a JPS is an xml attribute and is parsed as '@id' this doesnt/
+    # match the field name in the dataclass. How can we handle xml attributes in python dataclasses?
+    id: str
+    JourneyPatternTimingLink: List[JourneyPatternTimingLink]
+
+
+@dataclass
+class JourneyPatternSections:
+    JourneyPatternSection: List[JourneyPatternSection]
+
 
 with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False)
     xml_root = xml_json['TransXChange']
     services_json = xml_root['Services']['Service']
-    vehicle_journey_json = xml_root['VehicleJourneys']['VehicleJourney']
-    journey_pattern_json = xml_root['JourneyPatternSections']['JourneyPatternSection']
+    vehicle_journey_json = xml_root['VehicleJourneys']
+    journey_pattern_json = xml_root['JourneyPatternSections']
     
     # #Checking attributes in class with elements taken out of JSON
     # for attribute_name in Service.__annotations__:
@@ -174,15 +204,14 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     #         print("Found")
     #     else:
     #         print("Not Found")
-            
+
+    service_object = from_dict(data_class=Service, data=services_json)
     
+    vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
     
-    
-    serviceobject = from_dict(data_class=Service, data=services_json)
-    
-    vehicle_journey= from_dict(data_class=VehicleJourney, data=vehicle_journey_json)
-    
-    journey_pattern_Object= from_dict(data_class=JourneyPatternTimingLink, data=journey_pattern_json)
+    journey_pattern_object = from_dict(data_class=JourneyPatternTimingLink, data=journey_pattern_json)
+
+
     
 
     

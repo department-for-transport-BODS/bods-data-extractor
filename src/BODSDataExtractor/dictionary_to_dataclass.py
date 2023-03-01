@@ -60,16 +60,6 @@ class TicketMachine:
 class Operational:
     TicketMachine: TicketMachine
 
-@dataclass
-class VehicleJourney:
-    OperatorRef: str
-    Operational: Operational
-    VehicleJourneyCode: str
-    ServiceRef: str
-    LineRef: str
-    JourneyPatternRef: str
-    DepartureTime: str
-    OperatingProfile: opt
 
 @dataclass
 class OutboundDescription:
@@ -101,17 +91,28 @@ class DaysOfNonOperation:
 
 @dataclass
 class RegularDayType:
-    DaysOfWeek: List[DaysOfWeek]
+    DaysOfWeek: Optional[List[DaysOfWeek]]
     
 @dataclass
 class BankHolidayOperation:
-    DaysOfNonOperation: List[DaysOfNonOperation]
+    DaysOfNonOperation: Optional[List[DaysOfNonOperation]]
 
 @dataclass
 class OperatingProfile:
     RegularDayType: Dict[str,RegularDayType]
-    DaysOfNonOperation: DaysOfNonOperation
-    BankHolidayOperation:
+    #DaysOfNonOperation: Optional[Dict[str,DaysOfNonOperation]]
+    BankHolidayOperation:Dict[str,BankHolidayOperation]
+
+@dataclass
+class VehicleJourney:
+    OperatorRef: str
+    Operational: Operational
+    VehicleJourneyCode: str
+    ServiceRef: str
+    LineRef: str
+    JourneyPatternRef: str
+    DepartureTime: str
+    OperatingProfile: Optional[OperatingProfile]
 
 @dataclass
 class JourneyPattern:
@@ -120,13 +121,13 @@ class JourneyPattern:
     Direction: str
     RouteRef: str
     JourneyPatternSectionRefs: str
-    _id:str
+    _id:Optional[str]
     
 @dataclass
 class StandardService:
     Origin: str
     Destination: str
-    UseAllPoints: bool
+    UseAllPoints: Optional[str]
     JourneyPattern	: List[JourneyPattern]
 
 @dataclass
@@ -137,14 +138,14 @@ class Service:
     Lines: Dict[str,Lines]
     OperatingPeriod: OperatingPeriod
     OperatingProfile: OperatingProfile
-    TicketMachineServiceCode: Optional[str]
+    TicketMachineServiceCode: Optional[str] = field(init=False)
     RegisteredOperatorRef: str
-    PublicUse: bool
+    PublicUse: str
     StandardService: StandardService
-    _CreationDateTime: Optional[str]
-    _ModificationDateTime: Optional[str]
-    _Modification:Optional[str]
-    _RevisionNumber: Optional[int]
+    _CreationDateTime: Optional[str]  = field(init=False)
+    _ModificationDateTime: Optional[str]  = field(init=False)
+    _Modification:Optional[str]  = field(init=False)
+    _RevisionNumber: Optional[int]  = field(init=False)
 
 
 
@@ -167,7 +168,7 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
             
     
     
-    
+    #debug from here
     serviceobject = from_dict(data_class=Service, data=services_json)
     
     
@@ -204,77 +205,3 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
             new_object=dict_to_object(attribute_value, attribute_name)
     
     
-    
-    
-    
-
-#     subclass_count=0
-        
-#     subclassdict={}
-    
-#     #assigning default values
-#     #use null instead of empty
-#     ServiceObject1=Service(None, None, None, None, None, None, None, None, None, None, None, None)
-    
-    
-    
-#     print(Service.__annotations__.items())
-    
-#     for key,value in Service.__annotations__.items():
-
-                        
-            
-#         if "<class '__main__." in str(value):
-#             keytoadd=str(key)
-            
-#             valuetoadd=str(value)
-            
-#             print("keep looking")
-#             subclass_count=subclass_count+1
-#             subclassdict[keytoadd]=valuetoadd
-                
-#                 #ReachRoot()
-                
-#         else:
-#             if key in services_json:
-#                 attribute=str(key)
-                
-#                 print(attribute)
-            
-#                 setattr(ServiceObject1,attribute,services_json[key])
-                
-#                 print(ServiceObject1)
-#                 print("assign attribute here")    
-#                 print(key)
-#                 print(value)
-                    
-#             else:
-#                 print("This attribute doesn't exist in this file")
-        
-        
-        
-#         print(subclassdict)
-        
-
-
-# #Python dictionary to object, should already know before for loop what attributes refer to other classes
-    
-    
-#     print(ServiceObject1.ServiceCode)    
-        
-        
-        
-        
-        
-#         # if hasattr(Service,"ServiceCode"):
-#         #     print("PRESENT")
-#         # else:
-#         #     print(hasattr(Service,i))
-            
-    
-#     services_json= Service
-    
-    
-    
-#     vehicle_journey_json = xml_root['VehicleJourneys']['VehicleJourney']
-#     journey_pattern_json = xml_root['JourneyPatternSections']['JourneyPatternSection']

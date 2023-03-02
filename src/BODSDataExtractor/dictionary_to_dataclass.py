@@ -135,7 +135,7 @@ class StandardService:
     Origin: str
     Destination: str
     UseAllPoints: Optional[str]
-    JourneyPattern	: List[JourneyPattern]
+    JourneyPattern: List[JourneyPattern]
 
 
 @dataclass
@@ -156,7 +156,7 @@ class Service:
 
 @dataclass
 class From:
-    Activity: str
+    Activity: Optional[str]
     StopPointRef: str
     TimingStatus: str
 
@@ -169,7 +169,7 @@ class To:
 
 @dataclass
 class JourneyPatternTimingLink:
-    id: str
+    _id: str
     From: From
     To: To
     RouteLinkRef: str
@@ -180,7 +180,7 @@ class JourneyPatternTimingLink:
 class JourneyPatternSection:
     # running into an issue here because the 'id' in a JPS is an xml attribute and is parsed as '@id' this doesnt/
     # match the field name in the dataclass. How can we handle xml attributes in python dataclasses?
-    id: str
+    _id: str
     JourneyPatternTimingLink: List[JourneyPatternTimingLink]
 
 
@@ -189,14 +189,16 @@ class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
 
 
+
 with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
-    xml_json = xmltodict.parse(xml_text, process_namespaces=False)
+    xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
     services_json = xml_root['Services']['Service']
     vehicle_journey_json = xml_root['VehicleJourneys']
     journey_pattern_json = xml_root['JourneyPatternSections']
-    
+
+    test = journey_pattern_json.keys()
     # #Checking attributes in class with elements taken out of JSON
     # for attribute_name in Service.__annotations__:
     #     print(attribute_name)
@@ -209,7 +211,7 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     
     vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
     
-    journey_pattern_object = from_dict(data_class=JourneyPatternTimingLink, data=journey_pattern_json)
+    journey_pattern_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
 
 
     

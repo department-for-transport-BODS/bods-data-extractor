@@ -1,5 +1,3 @@
-
-import inspect
 from dataclasses import dataclass, field, is_dataclass
 from typing import List, Dict, Optional
 from dacite import from_dict
@@ -187,7 +185,6 @@ class JourneyPatternSection:
 @dataclass
 class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
-
 
 
 with open(r'ADER.xml', 'r', encoding='utf-8') as file:

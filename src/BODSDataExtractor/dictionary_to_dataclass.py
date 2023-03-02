@@ -62,49 +62,44 @@ class InboundDescription:
 
 
 @dataclass
-class Lines:
-    LineName: str
-    OutboundDescription: OutboundDescription
-    InboundDescription: Optional[InboundDescription]
-    _id: Optional[str] 
-
-
-@dataclass
 class OperatingPeriod:
     StartDate: str
 
 
 @dataclass
-class DaysOfWeek:
-    day : str
-
-
-@dataclass
-class DaysOfNonOperation:
-    day : str
-
-
-@dataclass
 class RegularDayType:
-    DaysOfWeek: Optional[List[DaysOfWeek]]
+    DaysOfWeek: Dict
+
+
+@dataclass
+class WorkingDays:
+    ServicedOrganisationRef: str
+
+@dataclass
+class ServicedOrganisationDayType:
+    DaysOfOperation: WorkingDays
 
 
 @dataclass
 class BankHolidayOperation:
-    DaysOfNonOperation: Optional[List[DaysOfNonOperation]]
+    DaysOfNonOperation: Dict
+    DaysOfOperation: Optional[Dict]
 
 
 @dataclass
 class OperatingProfile:
-    RegularDayType: Dict[str,RegularDayType]
-    #DaysOfNonOperation: Optional[Dict[str,DaysOfNonOperation]]
-    BankHolidayOperation:Dict[str,BankHolidayOperation]
+    RegularDayType: RegularDayType
+    BankHolidayOperation: BankHolidayOperation
+    PublicUse: Optional[str]
+    DaysOfNonOperation: Optional[Dict]
+    RegisteredOperatorRef: Optional[str]
+    ServicedOrganisationDayType: Optional[ServicedOrganisationDayType]
 
 
 @dataclass
 class VehicleJourney:
     OperatorRef: str
-    Operational: Operational
+    Operational: Optional[Operational]
     VehicleJourneyCode: str
     ServiceRef: str
     LineRef: str
@@ -125,7 +120,7 @@ class JourneyPattern:
     Direction: str
     RouteRef: str
     JourneyPatternSectionRefs: str
-    _id:Optional[str]
+    _id: Optional[str]
 
 
 @dataclass
@@ -137,9 +132,22 @@ class StandardService:
 
 
 @dataclass
+class Line:
+    _id: Optional[str]
+    LineName: str
+    OutboundDescription: OutboundDescription
+    InboundDescription: Optional[InboundDescription]
+
+
+@dataclass
+class Lines:
+    Line: Line
+
+
+@dataclass
 class Service:
     ServiceCode: str
-    Lines: Dict[str,Lines]
+    Lines: Lines
     OperatingPeriod: OperatingPeriod
     OperatingProfile: Optional[OperatingProfile]
     TicketMachineServiceCode: Optional[str] = field(init=False)
@@ -176,8 +184,6 @@ class JourneyPatternTimingLink:
 
 @dataclass
 class JourneyPatternSection:
-    # running into an issue here because the 'id' in a JPS is an xml attribute and is parsed as '@id' this doesnt/
-    # match the field name in the dataclass. How can we handle xml attributes in python dataclasses?
     _id: str
     JourneyPatternTimingLink: List[JourneyPatternTimingLink]
 
@@ -187,7 +193,7 @@ class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
 
 
-with open(r'ADER.xml', 'r', encoding='utf-8') as file:
+with open(r'CHAM.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
@@ -195,7 +201,6 @@ with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     vehicle_journey_json = xml_root['VehicleJourneys']
     journey_pattern_json = xml_root['JourneyPatternSections']
 
-    test = journey_pattern_json.keys()
     # #Checking attributes in class with elements taken out of JSON
     # for attribute_name in Service.__annotations__:
     #     print(attribute_name)

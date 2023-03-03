@@ -25,7 +25,8 @@ jobs:
         run: pip install -r new_requirements.txt
         
       - name: Run Full Extract Test
-        run: python bods-data-extractor/src/BODSDataExtractor/full_extract_test.py
+        run: |
+          python bods-data-extractor/src/BODSDataExtractor/full_extract_test.py
         
       - name: Run Stop Level Test
         run: python bods-data-extractor/src/BODSDataExtractor/stop_level_test.py

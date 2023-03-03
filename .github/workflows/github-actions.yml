@@ -19,7 +19,7 @@ jobs:
   
         uses: actions/setup-node@v2
         with:
-          version: "3.9"
+          python-version: "3.9"
         
       - name: Install dependencies
         run: pip install -r new_requirements.txt

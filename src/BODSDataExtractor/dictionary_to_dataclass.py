@@ -150,14 +150,14 @@ class Service:
     Lines: Lines
     OperatingPeriod: OperatingPeriod
     OperatingProfile: Optional[OperatingProfile]
-    TicketMachineServiceCode: Optional[str] = field(init=False)
+    TicketMachineServiceCode: Optional[str]# = field(init=False)
     RegisteredOperatorRef: str
     PublicUse: str
     StandardService: StandardService
-    _CreationDateTime: Optional[str]  = field(init=False)
-    _ModificationDateTime: Optional[str]  = field(init=False)
-    _Modification:Optional[str]  = field(init=False)
-    _RevisionNumber: Optional[int]  = field(init=False)
+    _CreationDateTime: Optional[str]#  = field(init=False)
+    _ModificationDateTime: Optional[str]#  = field(init=False)
+    _Modification:Optional[str]#  = field(init=False)
+    _RevisionNumber: Optional[int]#  = field(init=False)
 
 
 @dataclass
@@ -193,7 +193,7 @@ class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
 
 
-with open(r'CHAM.xml', 'r', encoding='utf-8') as file:
+with open(r'ADER.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
@@ -215,10 +215,3 @@ with open(r'CHAM.xml', 'r', encoding='utf-8') as file:
     
     journey_pattern_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
 
-
-    
-
-    
-    
-
-    

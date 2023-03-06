@@ -1,0 +1,33 @@
+name: Unit Testing 
+run-name: ${{ github.actor }} is testing to see if we can merge the branch using GitHub Actions
+
+on:
+  pull_request:
+    branches: [ "release-ap-1.1" ]
+
+jobs:
+  my-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up python
+  
+        uses: actions/setup-node@v2
+        with:
+          python-version: "3.9"
+        
+      - name: Install dependencies
+        run: pip install -r new_requirements.txt
+        
+      - name: Run Full Extract Test
+        env:
+          api_key: ${{secrets.api_key}}
+        run: |
+          python src/BODSDataExtractor/full_extract_test.py
+        
+      - name: Run Stop Level Test
+        env:
+          api_key: ${{secrets.api_key}}
+        run: |
+          python src/BODSDataExtractor/stop_level_test.py

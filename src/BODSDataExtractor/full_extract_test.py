@@ -28,7 +28,7 @@ api = os.getenv('api_key')
 #intiate an object instance called my_bus_data_object with desired parameters 
 
 my_bus_data_object = TimetableExtractor(api_key=api
-                                 ,limit=10000      
+                                 ,limit=10      
                                  ,status = 'published' 
                                  ,service_line_level=True 
                                  ,stop_level=False
@@ -39,10 +39,10 @@ my_bus_data_object = TimetableExtractor(api_key=api
 filtered_dataset_level = my_bus_data_object.metadata
 
 #save the extracted dataset level data to lcoal csv file
-my_bus_data_object.save_metadata_to_csv()
+#my_bus_data_object.save_metadata_to_csv()
 
 #save the extracted service line level data to dataset_level variable
 filtered_service_line_level = my_bus_data_object.service_line_extract
 
 #save the extracted service line level data to lcoal csv file
-my_bus_data_object.save_service_line_extract_to_csv()
+#my_bus_data_object.save_service_line_extract_to_csv()

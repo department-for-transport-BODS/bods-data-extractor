@@ -29,5 +29,5 @@ jobs:
           python src/BODSDataExtractor/full_extract_test.py
         
       - name: Run Stop Level Test
-        run:|
-        python src/BODSDataExtractor/stop_level_test.py
+        run: |
+          python src/BODSDataExtractor/stop_level_test.py

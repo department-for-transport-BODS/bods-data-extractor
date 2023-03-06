@@ -39,10 +39,10 @@ my_bus_data_object = TimetableExtractor(api_key=api
 filtered_dataset_level = my_bus_data_object.metadata
 
 #save the extracted dataset level data to lcoal csv file
-my_bus_data_object.save_metadata_to_csv()
+#my_bus_data_object.save_metadata_to_csv()
 
 #save the extracted stop level data to stop_level variable
 stop_level = my_bus_data_object.timetable_dict
 
 #stop_level variable is a dictionary of dataframes, which can be saved to csv as follows (saves in downloads folder)
-my_bus_data_object.save_all_timetables_to_csv()
+#my_bus_data_object.save_all_timetables_to_csv()

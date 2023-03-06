@@ -31,5 +31,7 @@ jobs:
           python src/BODSDataExtractor/full_extract_test.py
         
       - name: Run Stop Level Test
+        env:
+          api_key: ${{secrets.api_key}}
         run: |
           python src/BODSDataExtractor/stop_level_test.py

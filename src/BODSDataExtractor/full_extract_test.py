@@ -28,7 +28,7 @@ api = os.getenv('api_key')
 #intiate an object instance called my_bus_data_object with desired parameters 
 
 my_bus_data_object = TimetableExtractor(api_key=api
-                                 ,limit=10      
+                                 ,limit=100000      
                                  ,status = 'published' 
                                  ,service_line_level=True 
                                  ,stop_level=False

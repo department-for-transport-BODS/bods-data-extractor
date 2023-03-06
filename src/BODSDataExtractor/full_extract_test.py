@@ -6,7 +6,7 @@
 # 
 # All that is needed is to enter your api key in the variable 'api', and run the code!
 # =============================================================================
-
+print
 try:
   from BODSDataExtractor.extractor import TimetableExtractor
 except:

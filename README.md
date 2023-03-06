@@ -129,7 +129,7 @@ Follow these simple steps to get started with the project. It is recommended tha
 
 Download and install Python 
 
-(If you are unfamiliar with Python, do not worry. This package is designed to be very easy to use, and once you have python installed you can copy and paste example code from below and through only making small tweaks to input parameters get the data or reporting metrics you require.
+If you are unfamiliar with Python, do not worry. This package is designed to be very easy to use, and once you have python installed you can copy and paste example code from below and get the data or reporting metrics you require by only making small changes to the code.
 
 For those unsure how to install Python, we recommend downloading Anaconda, an open-source distribution for Python, using the following link: 
 
@@ -266,7 +266,7 @@ stop_level = my_bus_data_object.timetable_dict
 dataset_level = my_bus_data_object.metadata
 service_line_level = my_bus_data_object.service_line_extract
 
-#save meta data and service line level data to csv file in your downloads directory
+#save metadata and service line level data to csv file in your downloads directory
 my_bus_data_object.save_metadata_to_csv()
 my_bus_data_object.save_service_line_extract_to_csv()
 
@@ -290,11 +290,11 @@ Directly below are some sample expected run times for extracting data using this
 
 It is important to note that this can vary depending on your local processing power, internet connection and on the nature of the datasets you are extracting (a dataset may contain one xml file, or several hundred).
 
-| Granularity of data extraction    | 1 dataset timing  | 20 dataset timing | 200 datasets timing      |
-| --------------------------------- | ----------------- |-------------------|--------------------------|
-| Dataset                           | > 0 hrs 1 min     | > 0 hrs 1 min     | 0 hrs 2 min              |
-| Service line                      | > 0 hrs 1 min     | > 0 hrs 1 min     | 0 hrs 6 min              |
-| Stop                              | 0 hrs 3 min       | > 0 hrs 6 min     | Memory issues @ 16Gb RAM |
+| Granularity of data extraction    | 1 dataset timing | 20 dataset timing | 200 datasets timing      |
+| --------------------------------- |------------------|-------------------|--------------------------|
+| Dataset                           | < 0 hrs 1 min    | < 0 hrs 1 min     | 0 hrs 2 min              |
+| Service line                      | < 0 hrs 1 min    | < 0 hrs 1 min     | 0 hrs 6 min              |
+| Stop                              | 0 hrs 3 min      | < 0 hrs 6 min     | Memory issues @ 16Gb RAM |
 
 
 ### How to fine tune your results using additional parameters
@@ -302,7 +302,7 @@ It is important to note that this can vary depending on your local processing po
 As well as specifying the granularity of data to extract (dataset, service line or stop level), limiting the number of datasets, and restricting to just published datasets, there are a number of additional parameters that the object instance can be initiated with. These are as follows:
 
 - nocs - _accepts list input of valid National Operator Codes e.g. ['HIPK', 'YCST']_
-- search -  _accepts string input of key words to filter for the data set name, data set description, organisation name, or admin name e.g. 'Arriva'_
+- search -  _accepts string input of key-words to filter for the data set name, data set description, organisation name, or admin name e.g. 'Arriva'_
 - bods_compliant - _accepts boolean input (True or False), where True filters for only BODS Compliant datasets. Default value is True_
 - atco_code - _accepts list input of the first three characters of ATCO codes (ATCO codes are unique identifiers of UK bus stops, where first three characters signify the admin area they are within). This filters datasets and/or service lines that have stops within the specified admin areas. e.g. ['320','450']_
 
@@ -343,7 +343,7 @@ The table can be accessed using the code below.
 #import the csv file as a text string from the BODSDataExtractor package
 atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
 
-#wrap lookup_file string into a stringIO object so it can be read by pandas
+#wrap lookup_file string into a stringIO object, so it can be read by pandas
 atco_lookup_string = io.StringIO(atco_lookup_file)
 
 #load into a DataFrame
@@ -358,7 +358,7 @@ The previous examples are based on using the same TimetableMetadata object insta
 from BODSDataExtractor.extractor import TimetableExtractor
 
 service_data_path = "path to your service line level data here"
-service_data = pd.read_csv(bods_data_path)
+service_data = pd.read_csv(service_data_path)
 
 my_bus_data_object = TimetableExtractor(api_key=api  # Your API Key Here
                                      , limit=1)  # set the limit to 1 to avoid waiting for many datasets to be downloaded                                    
@@ -405,7 +405,7 @@ datasets_published_in_TXC_2_4 = my_bus_data_object.datasets_published_in_TXC_2_4
 
 red_dq = my_bus_data_object.red_dq_scores() #returns the number of operators in a table with red dq scores
 
-less_than_10 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 10) and returns a list of operators with a data quality score less than that integer
+less_than_90 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 90) and returns a list of operators with a data quality score less than that integer
 
 no_lic_no = my_bus_data_object.no_licence_no() # returns a report listing which datasets contain files which do not have a licence number
 
@@ -413,7 +413,7 @@ no_lic_no = my_bus_data_object.no_licence_no() # returns a report listing which 
 
 #### Reporting on all of the published timetables data in BODS
 
-The below functions are to be run on all of the published timetables data in the BODS platform. The general purpose of these is to cross check the timetables data published in BODS with the services registered on the OTC database. 
+The below functions are to be run on all of the published timetables data in the BODS platform. The general purpose of these is to cross-check the timetables data published in BODS with the services registered on the OTC database. 
 
 ```python
 services_by_area = my_bus_data_object.services_on_bods_or_otc_by_area() #Generates a dataframe of all service codes published on BODS and/or in the OTC database, indicates whether they are published on both or one of BODS and OTC, and provides the admin area the services has stops within

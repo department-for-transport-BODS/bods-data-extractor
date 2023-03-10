@@ -308,37 +308,22 @@ print(JourneyPatternRef_var)
 print(DepartureTime_var)
 
 
-def add_to_dataframe(where):
+def add_to_dataframe(where,DepartureTime_var):
     print("Sorry the solution isn't ready yet")
-    #attempt started here making a generalised row addition, deciding to and from in parameter passed
     
+    #Sequence Number
+    print(JourneyPatternTimingLink.where._SequenceNumber)
+    row_to_add.append(JourneyPatternTimingLink.where._SequenceNumber)
     
+    print(JourneyPatternTimingLink.where.StopPointRef)
+    row_to_add.append(JourneyPatternTimingLink.where.StopPointRef)
+    min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
+    min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
+    NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))  
+    DepartureTime_var=NewDepartureTime
+    row_to_add.append(DepartureTime_var.time())
     
-    # print(JourneyPatternTimingLink.where._SequenceNumber)
-    # row_to_add.append(JourneyPatternTimingLink.From._SequenceNumber)
-
-    # #StopPointRef
-    # print(JourneyPatternTimingLink.where.StopPointRef)
-    # row_to_add.append(JourneyPatternTimingLink.From.StopPointRef)
-    
-    # #initital departure time
-    # row_to_add.append(DepartureTime_var.time())
-    
-    # #show link id
-    # print(JourneyPatternTimingLink._id)
-
-    # #extract run times from runtime string
-    # min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-
-    # #check if these run times are in vj timing link and reassign accordingly
-    # min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
-    
-    # #add onto departure time
-    # NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))      
-    
-    # DepartureTime_var=NewDepartureTime
-    
-    # timetable.loc[len(timetable)]=row_to_add
+    return row_to_add , DepartureTime_var
 
 
 
@@ -400,9 +385,9 @@ for jp in service_object.StandardService.JourneyPattern:
                         min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
                         
                         #add onto departure time
-                        NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))      
+                        #NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))      
                         
-                        DepartureTime_var=NewDepartureTime
+                        #DepartureTime_var=NewDepartureTime
                         
                         timetable.loc[len(timetable)]=row_to_add
                         
@@ -420,13 +405,22 @@ for jp in service_object.StandardService.JourneyPattern:
                         #StopPointRef
                         print(JourneyPatternTimingLink.To.StopPointRef)
                         row_to_add.append(JourneyPatternTimingLink.To.StopPointRef)
-                        
-                        
-                        
+                        min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
+                        min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
                         NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))  
                         DepartureTime_var=NewDepartureTime
-                        
                         row_to_add.append(DepartureTime_var.time())
+                        
+                        
+                        #row_to_add=add_to_dataframe(To,DepartureTime_var)
+                        
+                        print(row_to_add)
+                        
+                        timetable.loc[len(timetable)]=row_to_add
+                        
+                        
+                        
+                        
                         
                         
                     else:
@@ -448,44 +442,13 @@ for jp in service_object.StandardService.JourneyPattern:
                         #StopPointRef
                         print(JourneyPatternTimingLink.To.StopPointRef)
                         row_to_add.append(JourneyPatternTimingLink.To.StopPointRef)
-    
-                        
+                        min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
+                        min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
+                        NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))  
+                        DepartureTime_var=NewDepartureTime
                         row_to_add.append(DepartureTime_var.time())
-                        
+                        timetable.loc[len(timetable)]=row_to_add
                     
-                    
-                    min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-                    
-                    
-                    min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-                    print(min_runtime,sec_runtime)
-                    
-                    
-                    min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
-
-        
-                    #change x to arrival time
-                    NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))      
-                    
-                    print(NewDepartureTime.time())
-
-                    DepartureTime_var=NewDepartureTime
-                    
-                    
-                    print(DepartureTime_var.time())
-                        
-                    #row_to_add.append(leaving_time)
-                    
-                    
-                    
-                    
-                    
-                    timetable.loc[len(timetable)]=row_to_add 
-                    
-                    
-                    print(len(jpSecRef.JourneyPatternTimingLink))
-                    
-
 
 
 

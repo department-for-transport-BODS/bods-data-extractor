@@ -31,6 +31,7 @@ calendar_df = analytical_timetable_data_without_duplicates[['DatasetID', 'Operat
                                                             'OperatingPeriodEndDate', 'RevisionNumber',
                                                             'OperatingDays']]
 
+
 # for testing
 # calendar_df.to_csv('calendar_df_original_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
@@ -80,6 +81,8 @@ def produce_calendar_structure(dataframe):
 
 # Adding Calendar dates
 calendar_df_structure = produce_calendar_structure(calendar_df)
+
+
 # for testing
 # calendar_df_structure.to_csv('calendar_df_structure_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
@@ -96,7 +99,7 @@ def convert_dates(dataframe):
     dataframe: dataframe with operating period refactored.
     """
     dataframe = dataframe.sort_values(by=['ServiceCode', 'LineName', 'RevisionNumber', 'OperatingDays']
-                                        , ascending=True)
+                                      , ascending=True)
 
     dataframe = dataframe.reset_index()
 
@@ -116,6 +119,8 @@ def convert_dates(dataframe):
 
 # Converting format of dates
 calendar_df_refactored = convert_dates(calendar_df_structure)
+
+
 # for testing
 # calendar_df_refactored.to_csv('calendar_df_refactored_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
@@ -251,13 +256,31 @@ consumer_df = operator_df.dropna(subset=dates, how='all')
 consumer_df.to_csv('consumer_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 calendar_report_df.to_csv('calendar_report_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
+
 # consumer to query
-# def getValidFile(date, serviceCode, lineName, operatingDays): date = pd.to_datetime(date) try:
-# position = consumer_df.loc[((consumer_df['ServiceCode'] == serviceCode) & (consumer_df['LineName'] == lineName) & (
-# consumer_df['OperatingDays'] == operatingDays)), date] if position.iloc[0] == 'True': result = consumer_df.loc[
+def get_valid_file(date_for_file, service_code, line_name, operating_days):
+    date_for_file = pd.to_datetime(date_for_file)
+    try:
+        rows_to_check = consumer_df.loc[((consumer_df['ServiceCode'] == service_code) &
+                                         (consumer_df['LineName'] == line_name)
+                                         & (consumer_df['OperatingDays'] == operating_days))]
+        new_rows_to_check = consumer_df.loc[((consumer_df['ServiceCode'] == service_code) &
+                                             (consumer_df['LineName'] == line_name)
+                                             & (consumer_df['DaysGroup'] == rows_to_check['DaysGroup'].iloc[0]))]
+        result_df = new_rows_to_check.loc[new_rows_to_check[date_for_file] == 'True']
+        if result_df.empty:
+            response = 'No valid file'
+        else:
+            response = result_df['FileName']
+        return response
+    except IndexError:
+        raise IndexError("No record found for provided input.")
+
+
+result = get_valid_file('13/03/2023  00:00:00', 'PB0000815:112', '541',
+                        'Tuesday,Wednesday,Thursday,Friday,Saturday')
+print(result)
+
+# if position.iloc[0] == 'True': result = consumer_df.loc[
 # position.index, 'FileName'] else: result = 'No valid file' return result except IndexError: raise IndexError("No
 # record found for provided input.")
-#
-#
-# result = getValidFile('13/02/2023  00:00:00', 'PB0001746:1', '3', 'Monday-Sunday')
-# print(result)

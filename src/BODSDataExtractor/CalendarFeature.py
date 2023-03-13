@@ -31,7 +31,8 @@ calendar_df = analytical_timetable_data_without_duplicates[['DatasetID', 'Operat
                                                             'OperatingPeriodEndDate', 'RevisionNumber',
                                                             'OperatingDays']]
 
-calendar_df.to_csv('calendar_df_original_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+# for testing
+# calendar_df.to_csv('calendar_df_original_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
 
 def produce_calendar_structure(dataframe):
@@ -79,7 +80,8 @@ def produce_calendar_structure(dataframe):
 
 # Adding Calendar dates
 calendar_df_structure = produce_calendar_structure(calendar_df)
-calendar_df_structure.to_csv('calendar_df_structure_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+# for testing
+# calendar_df_structure.to_csv('calendar_df_structure_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
 
 def convert_dates(dataframe):
@@ -114,7 +116,8 @@ def convert_dates(dataframe):
 
 # Converting format of dates
 calendar_df_refactored = convert_dates(calendar_df_structure)
-calendar_df_refactored.to_csv('calendar_df_refactored_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+# for testing
+# calendar_df_refactored.to_csv('calendar_df_refactored_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
 
 def check_operating_days(dataframe):
@@ -167,7 +170,8 @@ def check_operating_days(dataframe):
 
 # Determine groups for validity check
 calendar_df_grouped = check_operating_days(calendar_df_refactored)
-calendar_df_grouped.to_csv('calendar_df_grouped_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+# for testing
+# calendar_df_grouped.to_csv('calendar_df_grouped_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
 # Gets a list of all dates from calendar_df
 columns = []
@@ -242,10 +246,10 @@ def determine_file_validity(dataframe):
 
 # Determine which file is valid on a specific date
 operator_df, calendar_report_df = determine_file_validity(calendar_df_grouped)
-operator_df.to_csv('operator_df_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+operator_df.to_csv('operator_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 consumer_df = operator_df.dropna(subset=dates, how='all')
-consumer_df.to_csv('consumer_df_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
-calendar_report_df.to_csv('calendar_report_df_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+consumer_df.to_csv('consumer_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+calendar_report_df.to_csv('calendar_report_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
 # consumer to query
 # def getValidFile(date, serviceCode, lineName, operatingDays): date = pd.to_datetime(date) try:

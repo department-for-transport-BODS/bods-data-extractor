@@ -280,7 +280,3 @@ def get_valid_file(date_for_file, service_code, line_name, operating_days):
 result = get_valid_file('13/03/2023  00:00:00', 'PB0000815:112', '541',
                         'Tuesday,Wednesday,Thursday,Friday,Saturday')
 print(result)
-
-# if position.iloc[0] == 'True': result = consumer_df.loc[
-# position.index, 'FileName'] else: result = 'No valid file' return result except IndexError: raise IndexError("No
-# record found for provided input.")

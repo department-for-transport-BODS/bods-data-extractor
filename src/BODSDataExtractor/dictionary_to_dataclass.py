@@ -5,19 +5,13 @@ Created on Tue Mar  7 14:36:32 2023
 @author: aakram7
 """
 import pandas as pd
-from dataclasses import dataclass, field, is_dataclass
+from dataclasses import dataclass
 from typing import List, Dict, Optional
 from dacite import from_dict
 import xmltodict
 import datetime
-import re
-import pandas as pd
 
 # set default value to null in optional values
-
-
-def dict_to_object(dictionary,class_to_convert):
-    return class_to_convert(**dictionary)
 
 
 @dataclass
@@ -89,6 +83,7 @@ class RegularDayType:
 class WorkingDays:
     ServicedOrganisationRef: Optional[str]
 
+
 @dataclass
 class ServicedOrganisationDayType:
     DaysOfOperation: WorkingDays
@@ -100,13 +95,17 @@ class BankHolidayOperation:
     DaysOfOperation: Optional[Dict]
 
 
-
 @dataclass
 class From:
     Activity: Optional[str]
     StopPointRef: Optional[str]
     TimingStatus: Optional[str]
     _SequenceNumber: Optional[str]
+
+    @property
+    def sequence_number(self):
+        return self._SequenceNumber
+
 
 
 @dataclass
@@ -116,7 +115,7 @@ class To:
     _SequenceNumber: Optional[str]
 
     @property
-    def SequenceNumber(self):
+    def sequence_number(self):
         return self._SequenceNumber
 
 
@@ -132,9 +131,9 @@ class OperatingProfile:
 
 @dataclass
 class VehicleJourneyTimingLink:
-    DutyCrewCode:Optional[str]
-    JourneyPatternTimingLinkRef:Optional[str]
-    RunTime:Optional[str]
+    DutyCrewCode: Optional[str]
+    JourneyPatternTimingLinkRef: Optional[str]
+    RunTime: Optional[str]
     From: From
     To: To
 
@@ -161,8 +160,6 @@ class VehicleJourney:
     VehicleJourneyTimingLink: Optional[list[VehicleJourneyTimingLink]]
 
 
-
-
 @dataclass
 class VehicleJourneys:
     VehicleJourney: List[VehicleJourney]
@@ -176,6 +173,10 @@ class JourneyPattern:
     RouteRef: str
     JourneyPatternSectionRefs: str
     _id: Optional[str]
+
+    @property
+    def id(self):
+        return self._id
 
 
 @dataclass
@@ -193,6 +194,11 @@ class Line:
     OutboundDescription: OutboundDescription
     InboundDescription: Optional[InboundDescription]
 
+    @property
+    def id(self):
+        return self._id
+
+
 
 @dataclass
 class Lines:
@@ -205,7 +211,7 @@ class Service:
     Lines: Lines
     OperatingPeriod: OperatingPeriod
     OperatingProfile: Optional[OperatingProfile]
-    TicketMachineServiceCode: Optional[str]# = field(init=False)
+    TicketMachineServiceCode: Optional[str]
     RegisteredOperatorRef: str
     PublicUse: str
     StandardService: StandardService
@@ -220,11 +226,19 @@ class JourneyPatternTimingLink:
     RouteLinkRef: str
     RunTime: str
 
+    @property
+    def id(self):
+        return self._id
+
 
 @dataclass
 class JourneyPatternSection:
     _id: str
     JourneyPatternTimingLink: List[JourneyPatternTimingLink]
+
+    @property
+    def id(self):
+        return self._id
 
 
 @dataclass
@@ -246,8 +260,7 @@ def extract_runtimes(journey_pattern_timing_link):
 
             for vjtl in vj.VehicleJourneyTimingLink:
 
-
-                if journey_pattern_timing_link._id == vjtl.JourneyPatternTimingLinkRef:
+                if journey_pattern_timing_link.id == vjtl.JourneyPatternTimingLinkRef:
                     runtime = vjtl.RunTime
 
                     return runtime
@@ -256,7 +269,7 @@ def extract_runtimes(journey_pattern_timing_link):
                     pass
 
         else:
-            print("VJ timing link Not Present")
+            print(f"VJ timing link Not Present: {journey_pattern_timing_link}")
 
     else:
         return runtime
@@ -267,13 +280,13 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
 
     runtime = extract_runtimes(jptl)
 
-    to_sequence = [jptl.To._SequenceNumber,
-                   jptl.To.StopPointRef,
+    to_sequence = [int(jptl.To.sequence_number),
+                   str(jptl.To.StopPointRef),
                    pd.Timedelta(runtime)]
 
     if first_jptl:
 
-        from_sequence = [jptl.From._SequenceNumber,
+        from_sequence = [jptl.From.sequence_number,
                          jptl.From.StopPointRef,
                          vj_departure_time]
 
@@ -295,35 +308,36 @@ with open(r'SCHN.xml', 'r', encoding='utf-8') as file:
     vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
     journey_pattern_section_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
 
-# Init empty timetable for a single Vehicle journey
-timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", "VJ"])
+
+# Define a base time to add run times to
+base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
 
 # List of journey patterns in service object
 journey_pattern_list = service_object.StandardService.JourneyPattern
+
+# Iterate once through JPs and JPS to find the indices in the list of each id
+journey_pattern_index = {key.id: value for value, key in enumerate(service_object.StandardService.JourneyPattern)}
+journey_pattern_section_index = {key.id: value for value, key in enumerate(journey_pattern_section_object.JourneyPatternSection)}
+
 
 # Take an example vehicle journey to start with, later we will iterate through multiples ones
 vj = vehicle_journey.VehicleJourney[0]
 departure_time = pd.Timedelta(vj.DepartureTime)
 
-# Define a base time to add run times to
-base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
+# Init empty timetable for a single Vehicle journey
+timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", f"{vj.VehicleJourneyCode}"])
 
-
-# Iterate once through JPs and JPS to find the indices in the list of each _id
-journey_pattern_index = {key._id: value for value, key in enumerate(service_object.StandardService.JourneyPattern)}
-journey_pattern_section_index = {key._id: value for value, key in enumerate(journey_pattern_section_object.JourneyPatternSection)}
 
 # Create vars for relevant indices of this vehicle journey
 vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
 vehicle_journey_jps_index = journey_pattern_section_index[journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
-vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index]._id
+#vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index].id
 
 # Mark the first JPTL
 first = True
 
 # Loop through relevant timing links
 for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink:
-
 
     # first JPTL should use 'From' AND 'To' stop data
     if first:
@@ -334,8 +348,10 @@ for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSec
         timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink,
                                                    departure_time,
                                                    first_jptl=True)
+
         # Add first sequence, stop ref and departure time
-        timetable.loc[0] = timetable_sequence[0]
+        first_timetable_row = pd.DataFrame([timetable_sequence[0]], columns=timetable.columns)
+        timetable = pd.concat([timetable, first_timetable_row], ignore_index=True)
 
         # Add second sequence etc
         timetable.loc[len(timetable)] = timetable_sequence[1]
@@ -346,6 +362,6 @@ for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSec
 
 
 # Turns the time deltas into time of day, final column is formatted as string for now
-timetable['VJ'] = timetable['VJ'].cumsum()
-timetable['VJ'] = timetable['VJ'].map(lambda x: x + base_time)
-timetable['VJ'] = timetable['VJ'].map(lambda x: x.strftime('%H:%M'))
+timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].cumsum()
+timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
+timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))

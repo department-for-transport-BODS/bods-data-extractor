@@ -6,7 +6,7 @@ Created on Wed Jan  4 12:37:43 2023
 """
 
 # Versioning
-# version: 1.1
+# version: 1.2
 
 from extractor import TimetableExtractor
 import pandas as pd

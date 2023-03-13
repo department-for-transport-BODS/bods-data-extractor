@@ -11,6 +11,9 @@ from dacite import from_dict
 import xmltodict
 import datetime
 import re
+import pandas as pd
+
+# set default value to null in optional values
 
 
 def dict_to_object(dictionary,class_to_convert):
@@ -63,6 +66,8 @@ class Operational:
 @dataclass
 class OutboundDescription:
     Description: str
+    Origin: Optional[str]
+    Destination: Optional[str]
 
 
 @dataclass
@@ -110,6 +115,10 @@ class To:
     TimingStatus: Optional[str]
     _SequenceNumber: Optional[str]
 
+    @property
+    def SequenceNumber(self):
+        return self._SequenceNumber
+
 
 @dataclass
 class OperatingProfile:
@@ -131,7 +140,7 @@ class VehicleJourneyTimingLink:
 
 
 
-   
+
 @dataclass
 class VehicleJourneyTimingLinks:
 
@@ -148,12 +157,9 @@ class VehicleJourney:
     JourneyPatternRef: str
     DepartureTime: str
     OperatingProfile: Optional[OperatingProfile]
+    DepartureDayShift: Optional[str]
     VehicleJourneyTimingLink: Optional[list[VehicleJourneyTimingLink]]
-    
-    _CreationDateTime: Optional[str]#  = field(init=False)
-    _ModificationDateTime: Optional[str]#  = field(init=False)
-    _Modification:Optional[str]#  = field(init=False)
-    _RevisionNumber: Optional[str]#  = field(init=False)
+
 
 
 
@@ -213,8 +219,8 @@ class JourneyPatternTimingLink:
     To: To
     RouteLinkRef: str
     RunTime: str
-    
-    
+
+
 @dataclass
 class JourneyPatternSection:
     _id: str
@@ -226,40 +232,55 @@ class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
 
 
+def extract_runtimes(journey_pattern_timing_link):
 
-    
+    """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be cecked"""
 
+    # extract run times from jptl
+    runtime = journey_pattern_timing_link.RunTime
 
-def extract_runtimes(TimingLink):
-    min_runtime=int(re.findall(r'(\d+)', TimingLink)[0])
-    sec_runtime=int(re.findall(r'(\d+)', TimingLink)[1])
-    
-    return min_runtime,sec_runtime
+    # if jptl runtime is 0, find equivalent vehicle journey pattern timing link run time
+    if runtime == 'PT0M0S':
 
-
-#Checks if vj_timing_link is populated so we can take runtime from here
-def check_vj_timing_link(min_runtime,sec_runtime):
-    if min_runtime==0 and sec_runtime==0:
         if vj.VehicleJourneyTimingLink is not None:
-            for VJTL in vj.VehicleJourneyTimingLink :
-                
-                if JourneyPatternTimingLink._id==VJTL.JourneyPatternTimingLinkRef:
-                    print("We have a match")
-                    min_runtime=int(re.findall(r'(\d+)', VJTL.RunTime)[0])
-                    sec_runtime=int(re.findall(r'(\d+)', VJTL.RunTime)[1])
+
+            for vjtl in vj.VehicleJourneyTimingLink:
+
+
+                if journey_pattern_timing_link._id == vjtl.JourneyPatternTimingLinkRef:
+                    runtime = vjtl.RunTime
+
+                    return runtime
+
                 else:
                     pass
+
         else:
-            print("VJ TIMIMG LINK Not Present")
-    
-    print(min_runtime,sec_runtime)
-    
-    return min_runtime,sec_runtime
+            print("VJ timing link Not Present")
+
+    else:
+        return runtime
 
 
+def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
+    """Returns the sequence number, stop point ref and time for a JPTL to be added to a timetable df"""
 
+    runtime = extract_runtimes(jptl)
 
+    to_sequence = [jptl.To._SequenceNumber,
+                   jptl.To.StopPointRef,
+                   pd.Timedelta(runtime)]
 
+    if first_jptl:
+
+        from_sequence = [jptl.From._SequenceNumber,
+                         jptl.From.StopPointRef,
+                         vj_departure_time]
+
+        return from_sequence, to_sequence
+
+    if not first_jptl:
+        return to_sequence
 
 
 with open(r'SCHN.xml', 'r', encoding='utf-8') as file:
@@ -270,186 +291,61 @@ with open(r'SCHN.xml', 'r', encoding='utf-8') as file:
     vehicle_journey_json = xml_root['VehicleJourneys']
     journey_pattern_json = xml_root['JourneyPatternSections']
 
-    # #Checking attributes in class with elements taken out of JSON
-    # for attribute_name in Service.__annotations__:
-    #     print(attribute_name)
-    #     if attribute_name in services_json:
-    #         print("Found")
-    #     else:
-    #         print("Not Found")
-
     service_object = from_dict(data_class=Service, data=services_json)
-    
     vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
-    
     journey_pattern_section_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
-    
-    #route_object= from_dict(data_class=Route, data=route)
+
+# Init empty timetable for a single Vehicle journey
+timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", "VJ"])
+
+# List of journey patterns in service object
+journey_pattern_list = service_object.StandardService.JourneyPattern
+
+# Take an example vehicle journey to start with, later we will iterate through multiples ones
+vj = vehicle_journey.VehicleJourney[0]
+departure_time = pd.Timedelta(vj.DepartureTime)
+
+# Define a base time to add run times to
+base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
 
 
-timetable= pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", "VJ"])
+# Iterate once through JPs and JPS to find the indices in the list of each _id
+journey_pattern_index = {key._id: value for value, key in enumerate(service_object.StandardService.JourneyPattern)}
+journey_pattern_section_index = {key._id: value for value, key in enumerate(journey_pattern_section_object.JourneyPatternSection)}
+
+# Create vars for relevant indices of this vehicle journey
+vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
+vehicle_journey_jps_index = journey_pattern_section_index[journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
+vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index]._id
+
+# Mark the first JPTL
+first = True
+
+# Loop through relevant timing links
+for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink:
 
 
+    # first JPTL should use 'From' AND 'To' stop data
+    if first:
 
-vj=vehicle_journey.VehicleJourney[0]
+        # remaining JPTLs are not the first one
+        first = False
 
+        timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink,
+                                                   departure_time,
+                                                   first_jptl=True)
+        # Add first sequence, stop ref and departure time
+        timetable.loc[0] = timetable_sequence[0]
 
-#for vj in vehicle_journey.VehicleJourney:
-    #create a dataframe here 
+        # Add second sequence etc
+        timetable.loc[len(timetable)] = timetable_sequence[1]
 
-JourneyPatternRef_var=vj.JourneyPatternRef
-DepartureTime_var=vj.DepartureTime
-
-#convert to datetime object
-DepartureTime_var=datetime.datetime.strptime(DepartureTime_var, "%H:%M:%S")
-
-
-print(JourneyPatternRef_var)
-print(DepartureTime_var)
-
-
-def add_to_dataframe(where,DepartureTime_var):
-    print("Sorry the solution isn't ready yet")
-    
-    #Sequence Number
-    print(JourneyPatternTimingLink.where._SequenceNumber)
-    row_to_add.append(JourneyPatternTimingLink.where._SequenceNumber)
-    
-    print(JourneyPatternTimingLink.where.StopPointRef)
-    row_to_add.append(JourneyPatternTimingLink.where.StopPointRef)
-    min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-    min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
-    NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))  
-    DepartureTime_var=NewDepartureTime
-    row_to_add.append(DepartureTime_var.time())
-    
-    return row_to_add , DepartureTime_var
+    else:
+        timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time)
+        timetable.loc[len(timetable)] = timetable_sequence
 
 
-
-
-
-for jp in service_object.StandardService.JourneyPattern:
-
-    
-    
-    if JourneyPatternRef_var==jp._id:
-        
-        print(JourneyPatternRef_var)
-        print(jp._id)
-        print("match")
-        
-        
-        JourneyPatternSectionRef_var=jp.JourneyPatternSectionRefs
-        print(JourneyPatternSectionRef_var)
-        
-        for jpSecRef in journey_pattern_section_object.JourneyPatternSection:
-
-            if jpSecRef._id==JourneyPatternSectionRef_var:
-                print(JourneyPatternSectionRef_var)
-                print(jpSecRef._id)
-                print("match")
-                
-                #JourneyPatternTiming Link Index
-                first=True
-                
-
-                for JourneyPatternTimingLink in jpSecRef.JourneyPatternTimingLink:
-                    
-
-                    
-                    row_to_add=[]
-
-                    
-                    
-                    
-                    if first:
-                        first=False
-                        print(JourneyPatternTimingLink.From._SequenceNumber)
-                        row_to_add.append(JourneyPatternTimingLink.From._SequenceNumber)
-            
-                        #StopPointRef
-                        print(JourneyPatternTimingLink.From.StopPointRef)
-                        row_to_add.append(JourneyPatternTimingLink.From.StopPointRef)
-                        
-                        #initital departure time
-                        row_to_add.append(DepartureTime_var.time())
-                        
-                        #show link id
-                        print(JourneyPatternTimingLink._id)
-
-                        #extract run times from runtime string
-                        min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-
-                        #check if these run times are in vj timing link and reassign accordingly
-                        min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
-                        
-                        #add onto departure time
-                        #NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))      
-                        
-                        #DepartureTime_var=NewDepartureTime
-                        
-                        timetable.loc[len(timetable)]=row_to_add
-                        
-                        
-                        row_to_add=[]
-                        
-                        
-
-  
-                        #Sequence Number
-                        print(JourneyPatternTimingLink.To._SequenceNumber)
-                        row_to_add.append(JourneyPatternTimingLink.To._SequenceNumber)
-                        
-                        
-                        #StopPointRef
-                        print(JourneyPatternTimingLink.To.StopPointRef)
-                        row_to_add.append(JourneyPatternTimingLink.To.StopPointRef)
-                        min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-                        min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
-                        NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))  
-                        DepartureTime_var=NewDepartureTime
-                        row_to_add.append(DepartureTime_var.time())
-                        
-                        
-                        #row_to_add=add_to_dataframe(To,DepartureTime_var)
-                        
-                        print(row_to_add)
-                        
-                        timetable.loc[len(timetable)]=row_to_add
-                        
-                        
-                        
-                        
-                        
-                        
-                    else:
-                        
-                    #Keep track of JourneyPatternTiming Link Index
-
-                    
-                    #JourneyPatternTimingLink
-                        print(JourneyPatternTimingLink._id)
-                        
-                        
-                        
-        
-                        #Sequence Number
-                        print(JourneyPatternTimingLink.To._SequenceNumber)
-                        row_to_add.append(JourneyPatternTimingLink.To._SequenceNumber)
-                        
-                        
-                        #StopPointRef
-                        print(JourneyPatternTimingLink.To.StopPointRef)
-                        row_to_add.append(JourneyPatternTimingLink.To.StopPointRef)
-                        min_runtime,sec_runtime=extract_runtimes(JourneyPatternTimingLink.RunTime)
-                        min_runtime,sec_runtime=check_vj_timing_link(min_runtime,sec_runtime)
-                        NewDepartureTime=(DepartureTime_var + datetime.timedelta(seconds=sec_runtime) + datetime.timedelta(minutes=min_runtime))  
-                        DepartureTime_var=NewDepartureTime
-                        row_to_add.append(DepartureTime_var.time())
-                        timetable.loc[len(timetable)]=row_to_add
-                    
-
-
-
-                                
+# Turns the time deltas into time of day, final column is formatted as string for now
+timetable['VJ'] = timetable['VJ'].cumsum()
+timetable['VJ'] = timetable['VJ'].map(lambda x: x + base_time)
+timetable['VJ'] = timetable['VJ'].map(lambda x: x.strftime('%H:%M'))

@@ -296,7 +296,7 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
         return to_sequence
 
 
-with open(r'SCHN.xml', 'r', encoding='utf-8') as file:
+with open(r'CHAM.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
@@ -321,7 +321,9 @@ journey_pattern_section_index = {key.id: value for value, key in enumerate(journ
 
 all_vjs = pd.DataFrame()
 
-collated_timetable= pd.DataFrame()
+collated_timetable_inbound= pd.DataFrame()
+
+collated_timetable_outbound= pd.DataFrame()
 
 # Take an example vehicle journey to start with, later we will iterate through multiples ones
 i=0
@@ -432,45 +434,26 @@ for vj in vehicle_journey.VehicleJourney:
     inbound[f"{vj.VehicleJourneyCode}"] = inbound[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
     inbound[f"{vj.VehicleJourneyCode}"] = inbound[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
 
-
-
-
-
-    #grabs the time column
-    df_Last_col = timetable.T.tail(1).T
-
-
-    #appends all vj timings together
-    all_vjs = all_vjs.merge(df_Last_col, how='outer', left_index=True, right_index=True)
-
     #reworking timetable matching
     ############################
-    #grabbing sequence number and stop point ref
-    df_relevant_col=timetable[["Sequence Number","Stop Point Ref"]]
-    #merge on common stop point ref
-    newtimetable= pd.merge(timetable, df_relevant_col, on = ['Stop Point Ref', 'Stop Point Ref']).sort_index(axis=1)
-    #delete duplicate collumn
-    to_drop = [x for x in newtimetable if x.endswith('_y')]
-    newtimetable.drop(to_drop, axis=1, inplace=True)
+    #OUTBOUND
+    #match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
+    merged_timetable_outbound = pd.merge(outbound, initial_timetable, on=['Stop Point Ref',"Sequence Number"]).sort_index(axis=1)
+    print("dd")
+    if merged_timetable_outbound.empty==True:
+        pass
+    elif collated_timetable_outbound.empty:
+        collated_timetable_outbound=collated_timetable_outbound.merge(merged_timetable_outbound, how='outer', left_index=True, right_index=True)
+    else:
+        collated_timetable_outbound = pd.merge(merged_timetable_outbound, collated_timetable_outbound, on=['Stop Point Ref',"Sequence Number"])
 
-    #merge based on matching stop point ref
-    merged_timetable = pd.merge(timetable, initial_timetable, on=['Stop Point Ref']).sort_index(axis=1)
-    to_drop = [x for x in merged_timetable if x.endswith('_y')]
-    merged_timetable.drop(to_drop, axis=1, inplace=True)
+    #INBOUND
+    #match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
+    merged_timetable_inbound = pd.merge(inbound, initial_timetable, on=['Stop Point Ref',"Sequence Number"]).sort_index(axis=1)
+    if merged_timetable_inbound.empty==True:
+        pass
+    elif collated_timetable_inbound.empty:
+        collated_timetable_inbound=collated_timetable_inbound.merge(merged_timetable_inbound, how='outer', left_index=True, right_index=True)
+    else:
+        collated_timetable_inbound = pd.merge(merged_timetable_inbound, collated_timetable_inbound, on=['Stop Point Ref',"Sequence Number"])
 
-    #add all vjs together
-    collated_timetable = collated_timetable.merge(merged_timetable, how='left', left_index=True, right_index=True)
-    to_drop = [x for x in collated_timetable if x.endswith('_y') ]
-    collated_timetable.drop(to_drop, axis=1, inplace=True)
-
-
-
-
-timetable.drop(timetable.columns[len(timetable.columns)-1], axis=1, inplace=True)
-finaltimetable= timetable.merge(all_vjs, how='outer', left_index=True, right_index=True)
-
-
-
-
-
-print("Done")

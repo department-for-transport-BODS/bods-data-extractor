@@ -290,50 +290,10 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
                          jptl.From.StopPointRef,
                          vj_departure_time]
 
-
-
-
-
-
         return from_sequence, to_sequence
 
     if not first_jptl:
         return to_sequence
-
-
-def intitalise_data_for_timetable():
-
-
-    print("in")
-    # Define a base time to add run times to
-    base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
-
-    # List of journey patterns in service object
-    journey_pattern_list = service_object.StandardService.JourneyPattern
-
-    # Iterate once through JPs and JPS to find the indices in the list of each id
-    journey_pattern_index = {key.id: value for value, key in enumerate(service_object.StandardService.JourneyPattern)}
-    journey_pattern_section_index = {key.id: value for value, key in
-                                     enumerate(journey_pattern_section_object.JourneyPatternSection)}
-
-    # Take an example vehicle journey to start with, later we will iterate through multiples ones
-    vj = vehicle_journey.VehicleJourney[0]
-    departure_time = pd.Timedelta(vj.DepartureTime)
-
-    # Init empty timetable for a single Vehicle journey
-    timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", f"{vj.VehicleJourneyCode}"])
-
-    # Create vars for relevant indices of this vehicle journey
-    vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
-    vehicle_journey_jps_index = journey_pattern_section_index[
-        journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
-    # vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index].id
-
-    # Mark the first JPTL
-    first = True
-
-    return base_time, journey_pattern_list, journey_pattern_index, journey_pattern_section_index, vj, departure_time,timetable, vehicle_journey_jp_index, vehicle_journey_jps_index, first
-
 
 
 with open(r'SCHN.xml', 'r', encoding='utf-8') as file:
@@ -349,12 +309,7 @@ with open(r'SCHN.xml', 'r', encoding='utf-8') as file:
     journey_pattern_section_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
 
 
-x=intitalise_data_for_timetable()
-
-print("check here")
-
-
-#Define a base time to add run times to
+# Define a base time to add run times to
 base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
 
 # List of journey patterns in service object
@@ -374,11 +329,6 @@ for vj in vehicle_journey.VehicleJourney:
 
     #initial timetable containing sequence number and stop point ref, other vjs are to be appended here, if they have a matching the stop point ref
     initial_timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref"])
-
-
-    vj = vehicle_journey.VehicleJourney[i]
-    i = i + 1
-
 
     departure_time = pd.Timedelta(vj.DepartureTime)
 
@@ -404,9 +354,11 @@ for vj in vehicle_journey.VehicleJourney:
 
     # Loop through relevant timing links
 
-
+    #journey pattern index assignemnet
 
     for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink:
+
+        direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
 
         # first JPTL should use 'From' AND 'To' stop data
         if first:
@@ -434,14 +386,13 @@ for vj in vehicle_journey.VehicleJourney:
             #acessing stop point and sequence number
             initial_timetable.loc[len(initial_timetable)]= timetable_sequence[1][0],timetable_sequence[1][1]
 
-            direction = service_object.StandardService.JourneyPattern[0].Direction
 
             if direction == 'outbound':
-                outbound = pd.concat([timetable, first_timetable_row], ignore_index=True)
-                inbound = pd.concat([timetable, first_timetable_row], ignore_index=True)
+                outbound = pd.concat([outbound, first_timetable_row], ignore_index=True)
+                outbound.loc[len(outbound)] = timetable_sequence[1]
             else:
-                inbound = pd.concat([timetable, first_timetable_row], ignore_index=True)
-                inbound = pd.concat([timetable, first_timetable_row], ignore_index=True)
+                inbound = pd.concat([inbound, first_timetable_row], ignore_index=True)
+                inbound.loc[len(inbound)] = timetable_sequence[1]
 
 
 
@@ -453,7 +404,6 @@ for vj in vehicle_journey.VehicleJourney:
             timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time)
             timetable.loc[len(timetable)] = timetable_sequence
 
-            direction = service_object.StandardService.JourneyPattern[0].Direction
 
             if direction == 'outbound':
                 outbound.loc[len(outbound)] = timetable_sequence
@@ -509,7 +459,7 @@ for vj in vehicle_journey.VehicleJourney:
     merged_timetable.drop(to_drop, axis=1, inplace=True)
 
     #add all vjs together
-    collated_timetable = collated_timetable.merge(merged_timetable, how='outer', left_index=True, right_index=True)
+    collated_timetable = collated_timetable.merge(merged_timetable, how='left', left_index=True, right_index=True)
     to_drop = [x for x in collated_timetable if x.endswith('_y') ]
     collated_timetable.drop(to_drop, axis=1, inplace=True)
 

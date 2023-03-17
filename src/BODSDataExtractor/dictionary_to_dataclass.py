@@ -296,7 +296,7 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
         return to_sequence
 
 
-with open(r'CHAM.xml', 'r', encoding='utf-8') as file:
+with open(r'ANEA_MONFRI.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
@@ -325,7 +325,7 @@ collated_timetable_inbound= pd.DataFrame()
 collated_timetable_outbound= pd.DataFrame()
 
 # Take an example vehicle journey to start with, later we will iterate through multiples ones
-i=0
+
 for vj in vehicle_journey.VehicleJourney:
 
     #initial timetable containing sequence number and stop point ref, other vjs are to be appended here, if they have a matching the stop point ref
@@ -355,9 +355,8 @@ for vj in vehicle_journey.VehicleJourney:
 
     # Loop through relevant timing links
 
-    #journey pattern index assignemnet
-
     for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink:
+
 
         direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
 
@@ -385,6 +384,7 @@ for vj in vehicle_journey.VehicleJourney:
             timetable.loc[len(timetable)] = timetable_sequence[1]
 
             #acessing stop point and sequence number
+            #consideration if vj is longer
             initial_timetable.loc[len(initial_timetable)]= timetable_sequence[1][0],timetable_sequence[1][1]
 
 
@@ -396,6 +396,10 @@ for vj in vehicle_journey.VehicleJourney:
                 inbound.loc[len(inbound)] = timetable_sequence[1]
             else:
                 print("Unknown Direction")
+
+
+            #if initial_timetable.shape<inbound.shape:
+
 
 
 
@@ -418,6 +422,9 @@ for vj in vehicle_journey.VehicleJourney:
 
             #acessing stop point and sequence number
             initial_timetable.loc[len(initial_timetable)] = timetable_sequence[0], timetable_sequence[1]
+            if initial_timetable.shape[0]<outbound.shape[0]:
+                print("redfine")
+
 
 
 
@@ -439,25 +446,33 @@ for vj in vehicle_journey.VehicleJourney:
 
     #reworking timetable matching
     ############################
+    #print(outbound.shape[0])
+    #if outbound.shape[0] > collated_timetable_outbound.shape[0]:
+    #    print(outbound.shape[0])
+
+    #print(inbound.shape[0])
+    #if inbound.shape[0] > initial_timetable.shape[0]:
+        #print(inbound.shape[0])
+
+
     #OUTBOUND
     #match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
+
+    #no need to have a merged outbound
     merged_timetable_outbound = pd.merge(outbound, initial_timetable, on=['Stop Point Ref',"Sequence Number"]).sort_index(axis=1)
-    print("dd")
-    if merged_timetable_outbound.empty==True:
+    if merged_timetable_outbound.empty:
         pass
     elif collated_timetable_outbound.empty:
         collated_timetable_outbound=collated_timetable_outbound.merge(merged_timetable_outbound, how='outer', left_index=True, right_index=True)
     else:
-        collated_timetable_outbound = pd.merge(merged_timetable_outbound, collated_timetable_outbound, on=['Stop Point Ref',"Sequence Number"])
+        collated_timetable_outbound = pd.merge(merged_timetable_outbound, collated_timetable_outbound, on=['Stop Point Ref', "Sequence Number"])
 
     #INBOUND
     #match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
     merged_timetable_inbound = pd.merge(inbound, initial_timetable, on=['Stop Point Ref',"Sequence Number"]).sort_index(axis=1)
-    if merged_timetable_inbound.empty==True:
+    if merged_timetable_inbound.empty:
         pass
     elif collated_timetable_inbound.empty:
         collated_timetable_inbound=collated_timetable_inbound.merge(merged_timetable_inbound, how='outer', left_index=True, right_index=True)
     else:
         collated_timetable_inbound = pd.merge(merged_timetable_inbound, collated_timetable_inbound, on=['Stop Point Ref',"Sequence Number"])
-
-print('0')

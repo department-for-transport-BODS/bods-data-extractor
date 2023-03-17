@@ -319,7 +319,6 @@ journey_pattern_list = service_object.StandardService.JourneyPattern
 journey_pattern_index = {key.id: value for value, key in enumerate(service_object.StandardService.JourneyPattern)}
 journey_pattern_section_index = {key.id: value for value, key in enumerate(journey_pattern_section_object.JourneyPatternSection)}
 
-all_vjs = pd.DataFrame()
 
 collated_timetable_inbound= pd.DataFrame()
 
@@ -392,9 +391,11 @@ for vj in vehicle_journey.VehicleJourney:
             if direction == 'outbound':
                 outbound = pd.concat([outbound, first_timetable_row], ignore_index=True)
                 outbound.loc[len(outbound)] = timetable_sequence[1]
-            else:
+            elif direction == 'inbound':
                 inbound = pd.concat([inbound, first_timetable_row], ignore_index=True)
                 inbound.loc[len(inbound)] = timetable_sequence[1]
+            else:
+                print("Unknown Direction")
 
 
 
@@ -409,8 +410,10 @@ for vj in vehicle_journey.VehicleJourney:
 
             if direction == 'outbound':
                 outbound.loc[len(outbound)] = timetable_sequence
-            else:
+            elif direction == 'inbound':
                 inbound.loc[len(inbound)] = timetable_sequence
+            else:
+                print("Unknown Direction")
 
 
             #acessing stop point and sequence number
@@ -457,3 +460,4 @@ for vj in vehicle_journey.VehicleJourney:
     else:
         collated_timetable_inbound = pd.merge(merged_timetable_inbound, collated_timetable_inbound, on=['Stop Point Ref',"Sequence Number"])
 
+print('0')

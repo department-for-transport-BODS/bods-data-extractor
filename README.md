@@ -1,4 +1,4 @@
-
+<a name="readme-top"></a>
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -33,6 +33,8 @@
 
 - [About The Project](#about-the-project)
   - [Built With](#built-with)
+  - [Useful Links](#useful-links)
+  - [Glossary of Terms](#glossary-of-terms)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -58,6 +60,7 @@
     - [And more!](#and-more)
 - [Contact / Contribute](#contact--contribute)
   - [Contact the Bus Open Data Service](#contact-the-bus-open-data-service)
+- [FAQs](#FAQs)  
 - [License](#license)
 
 <!-- ABOUT THE PROJECT -->
@@ -83,7 +86,39 @@ This project was created to lower the barrier to entry for analysis of UK Bus Op
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+### Useful Links
 
+There are a number of different documents and data standards that are used as part of the Bus Open Data Service. Please find these links below: 
+
+- [Bus Services Act 2017](https://www.legislation.gov.uk/ukpga/2017/21/introduction/enacted)
+- [National Bus Strategy](https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/980227/DfT-Bus-Back-Better-national-bus-strategy-for-England.pdf)
+- [Timetables Data Standard](https://pti.org.uk/system/files/files/TransXChange_UK_PTI_Profile_v1.1.A.pdf)
+- [Versioning in Timetables](https://pti.org.uk/system/files/files/TransXChange%20UK%20PTI%20Profile%20-%20Versioning%20Application%20Note%20v1.0.pdf)
+- [Location Data Standard](https://www.gov.uk/government/publications/technical-guidance-publishing-location-data-using-the-bus-open-data-service-siri-vm/technical-guidance-siri-vm#the-siri-vm-standard)
+- [Guide to Matching Location and Timetables Data](https://pti.org.uk/system/files/files/SIRI_VM_PTI_Data_Matching_v1-0.pdf)
+- [Fares Data Standard](http://netex.uk/farexchange/)
+- [BODS API Documentation](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=api)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Glossary of Terms
+
+To help you when using the data, we've put together a list of useful terms and their meanings. 
+
+| Term    | Definition |
+|:-------|:-----------|
+|API / API Key | An API (Application Programming Interface) is a way for two different computer programmes to communicate with each other. All data within the Bus Open Data Service can be queried and accessed via API calls. A different API call is required for each type of data (timetables, bus location, fares). Use of the APIs requires an API key which can be obtained from your [BODS Account Settings](https://data.bus-data.dft.gov.uk/account/settings/). This key is linked to your account and should not be shared. If you have not already done so you will need to [register](https://data.bus-data.dft.gov.uk/account/signup/) in order to create your API key. |
+|ATCO Code| ATCO (Association of Transport Co-ordinating Officers) codes refer to the unique identifiers used for individual UK bus stops. The first 3 numbers denote the authority responsible for the stop. The fourth character is a 0 (zero). The remaining characters to a maximum of 8 are alpha-numeric determined locally. BODS Data Extractor allows you to filter results on the ATCO admin authority (the first 3 numbers). Please see fine-tuning section [below](#how-to-fine-tune-your-results-using-additional-parameters) for more detail on how to do this.|
+|Data Field Definitions | For definitions of each field within the data returned, please see [BODS Data Catalogue](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=datacatalogue).
+| Data Set/Feed | Operators must provide a complete set of data regarding local bus services. Please see [BODS Quick Start Guidance](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=quickstart) for more information. |
+|NeTEx | NeTEx is a CEN standard that can be used to represent many aspects of a multi-modal transport network. The UK profile includes elements related to fares for buses. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
+| NOC | NOC stands for National Operator Code. Each bus operator has at least one identifying code, consisting of four letters, but can have multiple. To find the NOCs for the operators you are interested in, you can browse or download the NOC Database from [Traveline](https://www.travelinedata.org.uk/traveline-open-data/transport-operations/about-2/). BODS Data Extractor also allows you to filter results by NOC, please see fine-tuning section [below](#how-to-fine-tune-your-results-using-additional-parameters) for more detail. |
+|OTC Database| OTC stands for Office of the Traffic Commissioner. The OTC database contains information for every registered bus service in the UK. Please see [below](#otc-database) for information on how the database is used within the package.|
+|Siri-VM | Siri-VM is an XML standard for exchanging real time bus location information. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
+| TransXChange | TransXChange is the UK nationwide standard for exchanging bus schedules and related data. Please see [above](#Useful-Links) and [BODS Data Formats](https://data.bus-data.dft.gov.uk/guidance/requirements/?section=dataformats) for more information.|
+| XML Files | An XML (Extensible Markup Language) file is a plain text file which describes the structure, storage and transportation of data using tags. Using the API you might get multiple XML files per timetable, but with the BODS Data Extractor these are combined into one easy-to-work-with extract. The URL is also supplied if you want to view the original XML. |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -94,7 +129,7 @@ Follow these simple steps to get started with the project. It is recommended tha
 
 Download and install Python 
 
-(If you are unfamiliar with Python, do not worry. This package is designed to be very easy to use, and once you have python installed you can copy and paste example code from below and through only making small tweaks to input parameters get the data or reporting metrics you require.
+If you are unfamiliar with Python, do not worry. This package is designed to be very easy to use, and once you have python installed you can copy and paste example code from below and get the data or reporting metrics you require by only making small changes to the code.
 
 For those unsure how to install Python, we recommend downloading Anaconda, an open-source distribution for Python, using the following link: 
 
@@ -231,7 +266,7 @@ stop_level = my_bus_data_object.timetable_dict
 dataset_level = my_bus_data_object.metadata
 service_line_level = my_bus_data_object.service_line_extract
 
-#save meta data and service line level data to csv file in your downloads directory
+#save metadata and service line level data to csv file in your downloads directory
 my_bus_data_object.save_metadata_to_csv()
 my_bus_data_object.save_service_line_extract_to_csv()
 
@@ -240,6 +275,9 @@ my_bus_data_object.save_all_timetables_to_csv()
 
 #or can filter to filter timetable results to a specfic licence number of service code (saves in downloads directory)
 my_bus_data_object.save_filtered_timetables_to_csv('PC0001838:41')
+
+#visualise a particular service line on an interactive map
+my_bus_data_object.visualise_service_line('PC0001838:41')
 
 ```
 ### Expected run times and performance
@@ -252,11 +290,11 @@ Directly below are some sample expected run times for extracting data using this
 
 It is important to note that this can vary depending on your local processing power, internet connection and on the nature of the datasets you are extracting (a dataset may contain one xml file, or several hundred).
 
-| Granularity of data extraction    | 1 dataset timing  | 20 dataset timing | 200 datasets timing      |
-| --------------------------------- | ----------------- |-------------------|--------------------------|
-| Dataset                           | > 0 hrs 1 min     | > 0 hrs 1 min     | 0 hrs 2 min              |
-| Service line                      | > 0 hrs 1 min     | > 0 hrs 1 min     | 0 hrs 6 min              |
-| Stop                              | 0 hrs 3 min       | > 0 hrs 6 min     | Memory issues @ 16Gb RAM |
+| Granularity of data extraction    | 1 dataset timing | 20 dataset timing | 200 datasets timing      |
+| --------------------------------- |------------------|-------------------|--------------------------|
+| Dataset                           | < 0 hrs 1 min    | < 0 hrs 1 min     | 0 hrs 2 min              |
+| Service line                      | < 0 hrs 1 min    | < 0 hrs 1 min     | 0 hrs 6 min              |
+| Stop                              | 0 hrs 3 min      | < 0 hrs 6 min     | Memory issues @ 16Gb RAM |
 
 
 ### How to fine tune your results using additional parameters
@@ -264,7 +302,7 @@ It is important to note that this can vary depending on your local processing po
 As well as specifying the granularity of data to extract (dataset, service line or stop level), limiting the number of datasets, and restricting to just published datasets, there are a number of additional parameters that the object instance can be initiated with. These are as follows:
 
 - nocs - _accepts list input of valid National Operator Codes e.g. ['HIPK', 'YCST']_
-- search -  _accepts string input of key words to filter for the data set name, data set description, organisation name, or admin name e.g. 'Arriva'_
+- search -  _accepts string input of key-words to filter for the data set name, data set description, organisation name, or admin name e.g. 'Arriva'_
 - bods_compliant - _accepts boolean input (True or False), where True filters for only BODS Compliant datasets. Default value is True_
 - atco_code - _accepts list input of the first three characters of ATCO codes (ATCO codes are unique identifiers of UK bus stops, where first three characters signify the admin area they are within). This filters datasets and/or service lines that have stops within the specified admin areas. e.g. ['320','450']_
 
@@ -305,7 +343,7 @@ The table can be accessed using the code below.
 #import the csv file as a text string from the BODSDataExtractor package
 atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
 
-#wrap lookup_file string into a stringIO object so it can be read by pandas
+#wrap lookup_file string into a stringIO object, so it can be read by pandas
 atco_lookup_string = io.StringIO(atco_lookup_file)
 
 #load into a DataFrame
@@ -320,7 +358,7 @@ The previous examples are based on using the same TimetableMetadata object insta
 from BODSDataExtractor.extractor import TimetableExtractor
 
 service_data_path = "path to your service line level data here"
-service_data = pd.read_csv(bods_data_path)
+service_data = pd.read_csv(service_data_path)
 
 my_bus_data_object = TimetableExtractor(api_key=api  # Your API Key Here
                                      , limit=1)  # set the limit to 1 to avoid waiting for many datasets to be downloaded                                    
@@ -367,7 +405,7 @@ datasets_published_in_TXC_2_4 = my_bus_data_object.datasets_published_in_TXC_2_4
 
 red_dq = my_bus_data_object.red_dq_scores() #returns the number of operators in a table with red dq scores
 
-less_than_10 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 10) and returns a list of operators with a data quality score less than that integer
+less_than_90 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 90) and returns a list of operators with a data quality score less than that integer
 
 no_lic_no = my_bus_data_object.no_licence_no() # returns a report listing which datasets contain files which do not have a licence number
 
@@ -375,7 +413,7 @@ no_lic_no = my_bus_data_object.no_licence_no() # returns a report listing which 
 
 #### Reporting on all of the published timetables data in BODS
 
-The below functions are to be run on all of the published timetables data in the BODS platform. The general purpose of these is to cross check the timetables data published in BODS with the services registered on the OTC database. 
+The below functions are to be run on all of the published timetables data in the BODS platform. The general purpose of these is to cross-check the timetables data published in BODS with the services registered on the OTC database. 
 
 ```python
 services_by_area = my_bus_data_object.services_on_bods_or_otc_by_area() #Generates a dataframe of all service codes published on BODS and/or in the OTC database, indicates whether they are published on both or one of BODS and OTC, and provides the admin area the services has stops within
@@ -461,6 +499,68 @@ https://discord.gg/4mMg5VXm5A
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- FAQs -->
+## FAQs
+This section highlights some frequently asked questions 
+
+#### What would a high level overview of using BODS compared to the BODS Data Extractor Package look like?
+##### Using BODS
+![BODS HIGH LEVEL](https://user-images.githubusercontent.com/114913914/219327718-c56a3e1c-1d63-436a-8794-6760c0ab9f63.jpg)
+
+##### Using the BODS Data Extractor Package
+
+
+![high level overview BDE](https://user-images.githubusercontent.com/114913914/219329596-0fe32c64-5373-4c24-b103-423fef00f12f.jpg)
+
+
+#### What is the difference between a service and a line?
+A “line” is a collection of vehicle journeys (trips) that share some high degree of commonality of route and timings, and which are all known by the same “LINE NAME”. Examples are “1”, “1B”, “100”, “calverton connection”, etc. (there is no requirement for a “LINE NAME” to include a number). 
+
+A “service” is a collection of lines that together make up a coherent set of vehicle journeys usually running over geographically similar routes although this isn’t a requirement. For example, consider a service “1/1A”, where line “1” operates “A to B direct” and line “1A” operates “A to B via C”, and together they make up the complete service between A and B.
+#### What is the OTC database and how does it relate?
+“OTC” stands for the “Office for the Traffic Commissioner”. This office is responsible for the registering and compliance monitoring of local bus services to ensure that operators meet their statutory obligations. The “OTC database” collects this information together for additional reference with the BDE package.
+#### What are PTI standards? What is the link for more info?
+As part of the DfT Bus Open Data Service (BODS) project, a new TransXChange version 2.4 profile named the UK Passenger Transport Information Profile (TXC-PTI for short) has been commissioned. These standards aim to provide a common standard for exchanging UK timetable and schedule data within BODS and similar systems. Please find related links to each standard listed below.
+
+•	[Timetables](https://pti.org.uk/system/files/files/TransXChange_UK_PTI_Profile_v1.1.A.pdf)\
+•	[Fares](http://netex.uk/farexchange/)\
+•	[AVL](https://www.gov.uk/government/publications/technical-guidance-publishing-location-data-using-the-bus-open-data-service-siri-vm/technical-guidance-siri-vm)\
+•	[Versioning](https://pti.org.uk/system/files/files/TransXChange%20UK%20PTI%20Profile%20-%20Versioning%20Application%20Note%20v1.0.pdf)\
+•	[Matching](https://pti.org.uk/system/files/files/SIRI_VM_PTI_Data_Matching_v1-0.pdf)
+#### Does BODS include data for all operators?
+The Bus Services Act 2017 requires operators of local bus services in England to publish data to the Bus Open Data Service.
+
+#### What makes a service code invalid? What are the consequences for including invalid service codes in analysis?
+A valid service code consists of the following for registered services:\
+•	Two characters as the beginning.\
+•	The tenth element of the string must be a colon.\
+•	 In total we should have more than 10 characters\
+
+For unregistered services:\
+•	The first two characters must be “UZ”\
+•	After the colon we must have an integer
+
+If we are supplied with an invalid service code we will be unable to uniquely identify a service.
+
+
+### Why might the BODS/OTC comparison be useful to a user?
+This is because the OTC database will provide a general outlook of data entered on BODS to verify any information we have.
+
+
+
+### How is data quality score calculated? If this is explained elsewhere in BODS documentation then we need to link to it.
+The data quality score is calculated by accounting for both critical and advisory observations. An example of an advisory observation is a missing block number. A more detailed description can be found here:
+
+[Data Quality Documentation](https://publish.bus-data.dft.gov.uk/guidance/score-description/)
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
 
 
 

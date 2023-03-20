@@ -6,13 +6,18 @@ import io
 import os
 from bods_client.client import BODSClient
 from bods_client.models import timetables
+from bods_client.models.base import APIError as BodsApiError
+from bods_client.models.timetables import TimetableResponse
 import lxml.etree as ET
 import xmltodict
 import itertools
-from itertools import zip_longest, product
+from itertools import zip_longest
 import numpy as np
 from pathlib import Path
 from sys import platform
+import re
+import concurrent.futures
+from typing import Union
 # try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
 try:
     import BODSDataExtractor.otc_db_download as otc_db_download
@@ -23,13 +28,17 @@ import datetime
 from collections import Counter
 import importlib.resources
 
+from shapely.geometry import Point
+from geopandas import GeoDataFrame
+import plotly.express as px
+import plotly.io as pio
 
 class TimetableExtractor:
 
 
     error_list = []
 
-    def __init__(self, api_key, limit=10000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False):
+    def __init__(self, api_key, limit=10_000, nocs=None, status='published', search=None, bods_compliant=True, atco_code=None, service_line_level=False, stop_level=False, threaded=False):
         self.api_key = api_key
         self.limit = limit
         self.nocs = nocs
@@ -39,44 +48,27 @@ class TimetableExtractor:
         self.atco_code = atco_code
         self.service_line_level = service_line_level
         self.stop_level = stop_level
+        self.threaded = threaded
+
         self.pull_timetable_data()
+
+        if self.metadata is None:
+            return # early return if no results to process
+
         self.otc_db = otc_db_download.fetch_otc_db()
 
-        if service_line_level == True:
+        if service_line_level or stop_level:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
-        else:
-            pass
 
-        if stop_level == True:
-            self.analytical_timetable_data()
-            self.analytical_timetable_data_analysis()
+        if stop_level:
             self.generate_timetable()
 
-        # self.service_line_extract = service_line_extract
-
-
-    def create_zip_level_timetable_df(self, response):
-
-        """This function takes the json api response file 
-        and returns it as a pandas dataframe"""
-
-        j = response.json()
-        j1 = json.loads(j)
-        df = pd.json_normalize(j1['results'])
+    def create_metadata_df(self, timetable_api_response):
+        """Converts BODS Timetable API results into a Pandas dataframe."""
+        df =  pd.DataFrame([vars(t_dataset) for t_dataset in timetable_api_response.results])
+        df['filetype'] = df['extension']
         return df
-
-    def determine_file_type(self ,url):
-        '''downloads a file from a url and returns the extension'''
-
-        response = requests.head(url)
-        try:
-            filename = response.headers["Content-Disposition"].split('"')[1]
-            extension = filename.split('.')[-1]
-
-            return extension
-        except:
-            return 'error in filename'
 
     def extract_dataset_level_atco_codes(self):
 
@@ -91,59 +83,53 @@ class TimetableExtractor:
 
         return atco_codes
 
+    def _handle_api_response(self, response: Union[TimetableResponse, BodsApiError]):
+        """Handle and validate the API response. Inform the user of any issues."""
+        if type(response) is BodsApiError:
+            if response.status_code == 401:
+                self.metadata = None
+                print('Invalid API token used.')
+                return
+            else:
+                raise ValueError(repr(response))
+            
+        if type(response) is TimetableResponse and response.count == 0:
+            self.metadata = None
+            print('No results returned from BODS Timetable API. Please check input parameters.')
+            return
+        
+        return response
+
+    def _get_timetable_datasets(self):
+        """Queries the BODS Timetable API as per the parameters set at instance
+        initialisation.
+        """
+        bods = BODSClient(api_key=self.api_key)
+        params = timetables.TimetableParams(limit=self.limit,
+                                            nocs=self.nocs,
+                                            status=self.status,
+                                            admin_areas=self.atco_code,
+                                            search=self.search)
+        api_response = bods.get_timetable_datasets(params=params)
+        return self._handle_api_response(api_response)
+
     def pull_timetable_data(self):
+        """Creates the timetable dataset metadata dataframe and assigns to
+        self.metadata.
 
-        '''Combines a number of functions to call the BODS API, 
-        set the limit for number of records to return 
-        and returns the json output as a dataframe
-        '''
+        Will return early with self.metadata set to None if there
+        are no datasets to work with.
+        """
+        print(f"Fetching timetable metadata for up to {self.limit:,} datasets...")
+        timetable_datasets = self._get_timetable_datasets()
+        if not timetable_datasets:
+            return
+        self.metadata = self.create_metadata_df(timetable_datasets)
 
-        #instantiate a BODSClient object
-        bods = BODSClient(api_key = self.api_key)
-
-        params = timetables.TimetableParams(limit = self.limit
-                                            , nocs = self.nocs
-                                            , status = self.status
-                                            , search = self.search
-                                            )
-
-        #set params of get_timetable_datasets method
-        print(f"Fetching timetable metadata for up to {self.limit} datasets...\n")
-        data = bods.get_timetable_datasets(params = params)
-
-        #convert the json output into a dataframe
-
-        self.metadata = TimetableExtractor.create_zip_level_timetable_df(self, data)
-        print(f"metadata downloaded for {len(self.metadata['url'])} records, converting to dataframe...\n")
-
-        print('appending filetypes...\n')
-        self.metadata['filetype'] = [TimetableExtractor.determine_file_type(self.metadata,x) for x in self.metadata['url']]
-
-        #limit to just bods compliant files if requested
         if self.bods_compliant == True:
-            self.metadata = self.metadata[self.metadata['bods_compliance']==True]
-        else:
-            pass
+            self.metadata = self.metadata[self.metadata['bods_compliance'] == True]
 
-        #limit results to specific atco codes if requested
-        if self.atco_code is not None:
-            #atco codes are stored within a list of dicts in the api response - need to extract these
-            #because of this, must process in a separate dataframe to the output metadata df
-            exploded_metadata = self.metadata.copy()
-            exploded_metadata['admin_areas'] =  exploded_metadata['admin_areas'].apply(lambda x: [d['atco_code'] for d in x])
-            #atco codes extracted into list; need to explode these out so one atco code per row
-            exploded_metadata = TimetableExtractor.xplode(exploded_metadata,['admin_areas'])
-            #use exploded out atco codes to filter for only the requested ones
-            exploded_metadata = exploded_metadata[exploded_metadata['admin_areas'].isin(self.atco_code)]
-
-            #filter the output metadata dataframe by the atco codes
-            self.metadata = self.metadata[self.metadata['id'].isin(exploded_metadata['id'])]
-        else:
-            pass
-
-        return self.metadata
-
-
+        print(f"Metadata downloaded for {self.metadata.shape[0]:,} datasets.")
 
     def xml_metadata(self, url, error_list):
 
@@ -176,269 +162,94 @@ class TimetableExtractor:
             TimetableExtractor.error_list.append(url)
             pass
 
-    def download_extract_zip(self, url):
-
+    def _dataset_filetype(self, response_headers):
+        """Determines the filetype of the dataset served up by a dataset url.
+        Returns None if it can't be determined.
         """
-        Download a ZIP file and extract the relevant contents
-        of each xml file within into a dataframe
+        pattern = r'(\.\w+)"'
+        m = re.search(pattern, response_headers['Content-Disposition'])
+        try:
+            return m.group(1)
+        except AttributeError:
+            return None
 
+    def download_extract_txc(self, url):
+        """Download the txc data from a dataset url (can be zip or single xml) and
+        extracts the data into a Pandas dataframe."""
+        response = requests.get(url)
+        filetype = self._dataset_filetype(response.headers)
+
+        if filetype == '.zip':
+            print(f'Fetching zip file from {url}...')
+            txc_df = self._extract_zip(response)
+        elif filetype == '.xml':
+            print(f'Fetching xml file from {url}...')
+            xml = io.BytesIO(response.content)
+            txc_df = self._extract_xml(response.url, xml)
+        else:
+            print(f'Invalid dataset file found: "{filetype}", skipping...')
+            return
+
+        return txc_df
+
+    def _extract_zip(self, response):
+        """Download a ZIP file and extract the relevant contents
+        of each xml file into a dataframe.
         """
-
         output = []
 
-        print(f"Fetching zip file from {url} in metadata table...\n")
-        response = requests.get(url)
-
-        #unizp the zipfile
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
-
-            #loop through files in the zip
             for zipinfo in thezip.infolist():
-
                 extension = zipinfo.filename.split('.')[-1]
+                if extension != 'xml':
+                    print(f'Found "{extension}" file in zip folder, passing...')
+                    continue
 
-                #if the filename has an 'xml' extension
-                if extension == 'xml':
-
-                    xml_output = []
-
-                    #open each file (assumed to be XML file)
-                    with thezip.open(zipinfo) as thefile:
-
-                        try:
-
-                            #note the url
-                            xml_output.append(url)
-
-                            #Creating xml data object
-                            xml_data = xmlDataExtractor(thefile)
-
-                            #extract data from xml 
-                            filename = xmlDataExtractor.extract_filename(xml_data)
-                            xml_output.append(filename)
-
-                            noc = xmlDataExtractor.extract_noc(xml_data)
-                            xml_output.append(noc)
-
-
-                            trading_name = xmlDataExtractor.extract_trading_name(xml_data)
-                            xml_output.append(trading_name)
-
-                            licence_number = xmlDataExtractor.extract_licence_number(xml_data)
-                            xml_output.append(licence_number)
-
-
-                            operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
-                            xml_output.append(operator_short_name)
-
-
-                            operator_code = xmlDataExtractor.extract_operator_code(xml_data)
-                            xml_output.append(operator_code)
-
-
-                            service_code = xmlDataExtractor.extract_service_code(xml_data)
-                            xml_output.append(service_code)
-
-
-                            line_name = xmlDataExtractor.extract_line_name(xml_data)
-                            xml_output.append(line_name)
-
-
-                            public_use = xmlDataExtractor.extract_public_use(xml_data)
-                            xml_output.append(public_use)
-
-
-                            service_origin = xmlDataExtractor.extract_service_origin(xml_data)
-                            xml_output.append(service_origin)
-
-
-                            service_destination = xmlDataExtractor.extract_service_destination(xml_data)
-                            xml_output.append(service_destination)
-
-
-                            operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
-                            xml_output.append(operating_period_start_date)
-
-
-                            operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
-                            xml_output.append(operating_period_end_date)
-
-
-                            schema_version = xmlDataExtractor.extract_schema_version(xml_data)
-                            xml_output.append(schema_version)
-
-
-                            revision_number = xmlDataExtractor.extract_revision_number(xml_data)
-                            xml_output.append(revision_number)
-
-                            la_code = xmlDataExtractor.extract_la_code(xml_data)
-                            xml_output.append(la_code)
-
-                            #reset read cursor
-                            thefile.seek(0)
-
-                            #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
-                            if self.stop_level == True:
-# =============================================================================
-#                             also read in xml as a text string
-#                             this is required for extracting sections of the xml for further stop level extraction, not just elements or attribs
-# =============================================================================
-                                #reset read cursor
-                                thefile.seek(0)
-                                xml_text = thefile.read()
-                                xml_json = xmltodict.parse(xml_text, process_namespaces=False, force_list=('JourneyPatternSection','JourneyPatternTimingLink','VehicleJourney','VehicleJourneyTimingLink'))
-
-                                journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
-                                xml_output.append(journey_pattern_json)
-
-                                vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
-                                xml_output.append(vehicle_journey_json)
-
-                                services_json = xml_json['TransXChange']['Services']['Service']
-                                xml_output.append(services_json)
-
-                            else:
-                                pass
-
-                        except:
-                            TimetableExtractor.error_list.append(url)
-
+                with thezip.open(zipinfo) as thefile:
+                    try:
+                        xml_output = self._extract_xml(response.url, thefile)
                         output.append(xml_output)
+                    except: # TODO really should be catching specific errors
+                        TimetableExtractor.error_list.append(response.url)
 
-                else:
-                    print(f'file extension in zip folder is {extension}, passing...\n')
-                    pass
+        return pd.concat(output)
 
+    def _extract_xml(self, url, xml):
+        xml_output = [url]
+        xml_data_extractor = xmlDataExtractor(xml)
+        xml_output.extend(xml_data_extractor.extract_service_level_info())
 
-        #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
+        # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
         if self.stop_level == True:
-            output_df = pd.DataFrame(output
-                                 , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
-                                 )
-        else:
-            output_df = pd.DataFrame(output
-                                     , columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
-                                     )
-        return output_df
-
-    def download_extract_xml(self, url):
-
-        """
-        Download an xml file and extract its relevant contents into a dataframe
-        """
-
-        xml_output = []
-        print(f"Fetching xml file from {url} in metadata table...\n")
-        resp = requests.get(url)
-        resp.encoding = 'utf-8-sig'
-
-        #save the filea as an xml then reopen it to parse, this can and should be optimised 
-        with open('temp.xml', 'w', encoding = 'utf-8') as file:
-            file.write(resp.text)
-            #size = os.path.getsize(r'temp.xml')
-
-        with open(r'temp.xml', 'r', encoding = 'utf-8') as xml:
-
-            #note the url
-            xml_output.append(url)
-
-            #create xml data object
-            xml_data = xmlDataExtractor(xml)
-
-            #extract data from xml 
-            filename = xmlDataExtractor.extract_filename(xml_data)
-            xml_output.append(filename)
-
-            noc = xmlDataExtractor.extract_noc(xml_data)
-            xml_output.append(noc)
-
-
-            trading_name = xmlDataExtractor.extract_trading_name(xml_data)
-            xml_output.append(trading_name)
-
-            licence_number = xmlDataExtractor.extract_licence_number(xml_data)
-            xml_output.append(licence_number)
-
-
-            operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
-            xml_output.append(operator_short_name)
-
-
-            operator_code = xmlDataExtractor.extract_operator_code(xml_data)
-            xml_output.append(operator_code)
-
-
-            service_code = xmlDataExtractor.extract_service_code(xml_data)
-            xml_output.append(service_code)
-
-
-            line_name = xmlDataExtractor.extract_line_name(xml_data)
-            xml_output.append(line_name)
-
-
-            public_use = xmlDataExtractor.extract_public_use(xml_data)
-            xml_output.append(public_use)
-
-
-            service_origin = xmlDataExtractor.extract_service_origin(xml_data)
-            xml_output.append(service_origin)
-
-
-            service_destination = xmlDataExtractor.extract_service_destination(xml_data)
-            xml_output.append(service_destination)
-
-
-            operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
-            xml_output.append(operating_period_start_date)
-
-
-            operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
-            xml_output.append(operating_period_end_date)
-
-
-            schema_version = xmlDataExtractor.extract_schema_version(xml_data)
-            xml_output.append(schema_version)
-
-
-            revision_number = xmlDataExtractor.extract_revision_number(xml_data)
-            xml_output.append(revision_number)
-
-            la_code = xmlDataExtractor.extract_la_code(xml_data)
-            xml_output.append(la_code)
-
-            #if stop level data is requested, then need the additional columns that contain jsons of the stop level info        
-            if self.stop_level == True:
 
 # =============================================================================
 #               also read in xml as a text string
 #               this is required for extracting sections of the xml for further stop level extraction, not just elements or attribs
 # =============================================================================
-                xml.seek(0)
-                xml_text = xml.read()
-                xml_json = xmltodict.parse(xml_text, process_namespaces=False,  force_list=('JourneyPatternSection','JourneyPatternTimingLink','VehicleJourney','VehicleJourneyTimingLink'))
+            xml.seek(0)
+            xml_text = xml.read()
+            xml_json = xmltodict.parse(
+                xml_text,
+                process_namespaces=False, 
+                force_list=('JourneyPatternSection','JourneyPatternTimingLink','VehicleJourney','VehicleJourneyTimingLink'))
 
-                journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
-                xml_output.append(journey_pattern_json)
+            journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
+            xml_output.append(journey_pattern_json)
 
-                vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
-                xml_output.append(vehicle_journey_json)
+            vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
+            xml_output.append(vehicle_journey_json)
 
-                services_json = xml_json['TransXChange']['Services']['Service']
-                xml_output.append(services_json)
-
-            else:
-                pass
+            services_json = xml_json['TransXChange']['Services']['Service']
+            xml_output.append(services_json)
 
         output_df = pd.DataFrame(xml_output).T
 
         if self.stop_level == True:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
+            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code','journey_pattern_json', 'vehicle_journey_json','services_json']
         else:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
+            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse','OperatingDays', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','la_code']
 
         return output_df
-
-
 
     def fetch_xml_filenames(self):
 
@@ -451,70 +262,85 @@ class TimetableExtractor:
         return full_table
 
     def analytical_timetable_data(self):
-
-        ''''
-        Uses a collection of extraction functions to extract data from within xml files. 
+        """Uses a collection of extraction functions to extract data from within xml files. 
         Some of these xml files are within zip files, and so these are processed differently.
         This extracted data is combined with the metadata of each file, and columns renamed to
-        yield analytical ready timetable data
-        '''
+        yield analytical ready timetable data.
+        """
+        orig_cols = [
+            "url",
+            "id",
+            "operator_name",
+            "description",
+            "comment",
+            "status",
+            "dq_score",
+            "dq_rag",
+            "bods_compliance",
+            "filetype",
+        ]
+        txc_cols = [
+            "URL",
+            "DatasetID",
+            "OperatorName",
+            "Description",
+            "Comment",
+            "Status",
+            "dq_score",
+            "dq_rag",
+            "bods_compliance",
+            "FileType",
+        ]
+        rename_mapper = {orig: txc for orig, txc in zip(orig_cols, txc_cols)}
 
-        #make the 3 tables
-        tXC_columns = ['URL', 'DatasetID', 'OperatorName','Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType']
-        master_table = pd.DataFrame(columns = tXC_columns)
-        zip_table = pd.DataFrame(columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','journey_pattern_json'] )
-        xml_table = pd.DataFrame(columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber','journey_pattern_json'] )
+        if self.threaded:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                results = executor.map(self.download_extract_txc, self.metadata["url"].to_list())
+                xml_table = pd.concat([df for df in results])
+        else:
+            extracted_xmls = []
+            for dataset_url in self.metadata["url"]:
+                extracted_xmls.append(self.download_extract_txc(dataset_url))
+            xml_table = pd.concat(extracted_xmls)
 
+        self.service_line_extract_with_stop_level_json = (
+            self.metadata.filter(orig_cols, axis=1)
+            .rename(columns=rename_mapper)
+            .merge(xml_table, how="outer", on="URL")
+        )
 
-        metadata_table = self.metadata
+        # explode rows that are always just 1 value to get attributes out of lists
+        self.service_line_extract_with_stop_level_json = self.xplode(
+            self.service_line_extract_with_stop_level_json,
+            [
+                "NOC",
+                "TradingName",
+                "LicenceNumber",
+                "OperatorShortName",
+                "OperatorCode",
+                "ServiceCode",
+                "PublicUse",
+                "OperatingDays",
+                "Origin",
+                "Destination",
+                "OperatingPeriodStartDate",
+                "OperatingPeriodEndDate",
+            ],
+        )
+        self.service_line_extract_with_stop_level_json = self.xplode(
+            self.service_line_extract_with_stop_level_json, ['LineName']
+        )
+        self.service_line_extract_with_stop_level_json = self.xplode(
+            self.service_line_extract_with_stop_level_json, ['la_code']
+        )
+        # Why is this needed?
+        self.service_line_extract_with_stop_level_json.to_csv("output.csv")
 
-        master_table[['URL', 'DatasetID', 'OperatorName' ,'Description', 'Comment', 'Status', 'dq_score', 'dq_rag', 'bods_compliance', 'FileType' ]] = metadata_table[['url', 'id', 'operator_name' ,'description', 'comment', 'status', 'dq_score', 'dq_rag', 'bods_compliance', 'filetype']]
-
-        #handle xmls and zips differently - in case there are no xmls/zips to interogate pass
-        xml_table = master_table.query('FileType == "xml"')
-        xml_table = [TimetableExtractor.download_extract_xml(self, x) for x in xml_table['URL']]
-        try:
-            xml_table = pd.concat(xml_table)
-        except:
-            #empty dataframe required even if no xmls so concating dfs below does not break 
-            xml_table = pd.DataFrame()
-
-
-        zip_table = master_table.query('FileType == "zip"')
-        zip_table = [TimetableExtractor.download_extract_zip(self, x) for x in zip_table['URL']]
-        try:
-            zip_table = pd.concat(zip_table)
-        except:
-            #empty dataframe required even if no zips so concating dfs below does not break 
-            zip_table = pd.DataFrame()
-
-
-        zip_xml_table = pd.concat([xml_table, zip_table])
-
-        self.service_line_extract_with_stop_level_json = master_table.merge(zip_xml_table, how = 'outer', on = 'URL')
-
-        #explode rows that are always just 1 value to get attributes out of lists
-        self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['NOC'
-                                                                 ,'TradingName'
-                                                                 ,'LicenceNumber'
-                                                                 ,'OperatorShortName'
-                                                                 ,'OperatorCode'
-                                                                 ,'ServiceCode'
-                                                                 ,'PublicUse'
-                                                                 ,'Origin'
-                                                                 ,'Destination'
-                                                                 ,'OperatingPeriodStartDate'
-                                                                 ,'OperatingPeriodEndDate'
-                                                                 ])
-        #explode rows that might be mulitple values
-        self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['LineName'])
-
-        #explode rows that might be mulitple values
-        self.service_line_extract_with_stop_level_json = TimetableExtractor.xplode(self.service_line_extract_with_stop_level_json,['la_code'])
-
-        self.service_line_extract_with_stop_level_json.to_csv('output.csv')
-
-        self.service_line_extract_with_stop_level_json['dq_score'] = self.service_line_extract_with_stop_level_json['dq_score'].str.rstrip('%').astype('float')
+        self.service_line_extract_with_stop_level_json["dq_score"] = (
+            self.service_line_extract_with_stop_level_json["dq_score"]
+            .str.rstrip("%")
+            .astype("float")
+        )
 
         print(f'The following URLs failed: {TimetableExtractor.error_list}')
 
@@ -526,61 +352,47 @@ class TimetableExtractor:
 # =============================================================================
         if self.atco_code is not None:
             self.service_line_extract_with_stop_level_json = self.service_line_extract_with_stop_level_json[self.service_line_extract_with_stop_level_json['la_code'].isin(self.atco_code)]
-        else:
-            pass
-
-        return self.service_line_extract_with_stop_level_json
-
 
     def analytical_timetable_data_analysis(self):
-
-        '''
-        Returns a copy of the service line level data suitable for analysis. Omits the columns with jsons
+        """Returns a copy of the service line level data suitable for analysis. Omits the columns with jsons
         of the final stop level data required for further processing and stop level analysis, for 
         performance and storage sake. Also omits la_code column, as if user is not interested in 
         local authorities of services then this adds unnecessary duplication (one service line can be in
         multiple las.)
-
-        '''
-
-        #conditional logic required, as json cols dont exist if stop_level parameter != True
-        if self.stop_level == True:
-            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['journey_pattern_json','vehicle_journey_json','services_json','la_code'],axis=1).drop_duplicates()
-        else:
-            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],axis=1).drop_duplicates()
-
-        return self.service_line_extract
-
-
-    def zip_or_xml(self, extension, url):
-
         """
-        Dictates which extraction function to use based on whether the downloaded
-        file from the BODS platform is an xml, or a zip file.
+        self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(
+            ["la_code"], axis=1
+        )
+
+        if self.stop_level:
+            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(
+                ["journey_pattern_json", "vehicle_journey_json", "services_json"], axis=1
+            )
+
+        self.service_line_extract = self.service_line_extract.drop_duplicates()
+        self.check_for_expired_operators()
+
+    def check_for_expired_operators(self):
+        """Adds service expiry status (True or False) to service level extract,
+        based on "OperatingPeriodEndDate" and today's date, where applicable.
+        If no end date provided then "No End Date" entered.
         """
+        today = datetime.datetime.now()
+        self.service_line_extract["Expired_Operator"] = (
+            pd.to_datetime(self.service_line_extract["OperatingPeriodEndDate"]) < today
+        )
+        self.service_line_extract.loc[
+            self.service_line_extract["OperatingPeriodEndDate"].isna(), "Expired_Operator"
+        ] = 'No End Date'
 
-        if extension == 'zip':
-            TimetableExtractor.download_extract_zip(self, url)
-        else:
-            TimetableExtractor.download_extract_xml(self, url)
+    def xplode(self, df, cols_to_explode):
+        """Explode out lists in dataframes.
+        Taken from https://stackoverflow.com/a/61390677"""
+        rest = {*df} - {*cols_to_explode}
+        zipped = zip(zip(*map(df.get, rest)), zip(*map(df.get, cols_to_explode)))
+        tups = [tup + exploded for tup, pre in zipped for exploded in zip_longest(*pre)]
 
-    def xplode(df, explode, zipped=True):
-
-        """
-        Explode out lists in dataframes
-        """
-
-        method = zip_longest if zipped else product
-
-        rest = {*df} - {*explode}
-
-        zipped = zip(zip(*map(df.get, rest)), zip(*map(df.get, explode)))
-        tups = [tup + exploded
-         for tup, pre in zipped
-         for exploded in method(*pre)]
-
-        return pd.DataFrame(tups, columns=[*rest, *explode])[[*df]]
-
+        return pd.DataFrame(tups, columns=[*rest, *cols_to_explode])
 
 # =============================================================================
 #       FUNCTIONS FOR EXTRACTING STOP LEVEL DATA
@@ -785,7 +597,7 @@ class TimetableExtractor:
         stop_level_df_journey = pd.DataFrame(stop_level_list_journey)
 
         #explode out lists in dataframe
-        stop_level_df_journey = TimetableExtractor.xplode(stop_level_df_journey,['JourneyPatternSectionID'
+        stop_level_df_journey = self.xplode(stop_level_df_journey,['JourneyPatternSectionID'
                                           ,"journey_pattern_timing_link"
                                           ,"stop_from"
                                           ,"stop_to"
@@ -834,7 +646,7 @@ class TimetableExtractor:
         stop_level_df_vehicle = pd.DataFrame(stop_level_list_vehicle)
 
         #explode out lists in dataframe
-        stop_level_df_vehicle = TimetableExtractor.xplode(stop_level_df_vehicle,[
+        stop_level_df_vehicle = self.xplode(stop_level_df_vehicle,[
                                             "VehicleJourneyCode"
                                             ,"JourneyPatternRef"
                                             ,"DepartureTime"
@@ -881,7 +693,7 @@ class TimetableExtractor:
         stop_level_df_vehicle = pd.DataFrame(stop_level_list_vehicle)
 
         #explode out lists in dataframe
-        stop_level_df_vehicle = TimetableExtractor.xplode(stop_level_df_vehicle,[
+        stop_level_df_vehicle = self.xplode(stop_level_df_vehicle,[
                                                 # "VehicleJourneyCode"
                                                 "JourneyPatternRef"
                                                 ,"LineRef"
@@ -932,7 +744,7 @@ class TimetableExtractor:
         stop_level_df_service = pd.DataFrame(stop_level_list_service)
 
         #explode out lists in dataframe
-        stop_level_df_service = TimetableExtractor.xplode(stop_level_df_service,['JourneyPattern_id', 'JourneyPatternSectionRef'])
+        stop_level_df_service = self.xplode(stop_level_df_service,['JourneyPattern_id', 'JourneyPatternSectionRef'])
         stop_level_df_service = stop_level_df_service.explode(['JourneyPatternSectionRef']).reset_index()
         del stop_level_df_service['index']
 
@@ -955,11 +767,9 @@ class TimetableExtractor:
         # url = f"https://naptan.api.dft.gov.uk/v1/access-nodes?atcoAreaCodes={atcos}&dataFormat=csv"
         url = "https://naptan.api.dft.gov.uk/v1/access-nodes?&dataFormat=csv"
 
+        # filter results within call to those needed (just lat and long)
         r = requests.get(url).content
-        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')))
-
-        #filter results to those needed (just lat and long)
-        naptan = naptan[['ATCOCode','CommonName','Longitude','Latitude']]
+        naptan = pd.read_csv(io.StringIO(r.decode('utf-8')), usecols=['ATCOCode','CommonName','Longitude','Latitude'])
 
         return naptan
 
@@ -1276,7 +1086,51 @@ class TimetableExtractor:
             k = str(k)
             k = k.replace(':','_')
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
+            
+            
+    def visualise_service_line(self, service_code):
+        '''
+       Visualise the route and timings of vehicle journeys from a specified
+       service code.
+        '''
+        
+        #filter dictionary of dataframes to just service code of interest and access df
+        filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)
+        for k, v in filtered_dict.items():
+            df = v
 
+        #df must be processed from wide to long for visualisation
+        df_melt = pd.melt(df, id_vars=['DatasetID','ServiceCode_LineName_RevisionNumber','ServiceCode','LineName','RevisionNumber','sequence_number','stop_from','CommonName','Longitude','Latitude'])
+        #remove nulls that represent where a bus doesnt stop at that stop
+        df_melt = df_melt.dropna(subset=['value'])
+        
+        #get names of service, line, revision number needed for the title of the viz
+        service_code = df_melt['ServiceCode'].iloc[0]
+        line_name = df_melt['LineName'].iloc[0]
+        revision_number = df_melt['RevisionNumber'].iloc[0]
+        
+        #create geo df 
+        geometry = [Point(xy) for xy in zip(df_melt['Longitude'], df_melt['Latitude'])]
+        gdf = GeoDataFrame(df_melt, geometry=geometry)   
+
+        #create viz
+        pio.renderers.default='browser'
+        fig = px.line_mapbox(
+            lat=gdf.geometry.y,
+            lon=gdf.geometry.x,
+            color=gdf.variable
+            ,hover_data={'Stop name':gdf.CommonName,'Stop number':gdf.sequence_number, 'time at stop':gdf.value,}
+            ,title = f'Vehicle Journeys (VJ) for: Service code - {service_code}, Line - {line_name}, File revision number - {revision_number}'
+        ).update_traces(mode="lines+markers").update_layout(
+            mapbox={
+                "style": "carto-positron",
+                "zoom": 12,
+            },
+            margin={"l": 25, "r": 25, "t": 50},
+        )
+            
+        print('\nTimetable visualised in browser!')
+        return fig.show()
 
 # =============================================================================
 #       REPORTING FUNCTIONS
@@ -1299,7 +1153,7 @@ class TimetableExtractor:
         print(*datasets, sep = ', ')
 
         return red_score
-
+    
 
     def dq_less_than_x(self, score):
 
@@ -1555,13 +1409,12 @@ class TimetableExtractor:
         #try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
         try:
             #import the csv file as a text string from the BODSDataExtractor package
-            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
-            
+            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor',
+                                                             'BODSDataExtractor/ATCO_code_to_LA_lookup.csv')
             #wrap lookup_file string into a stringIO object so it can be read by pandas
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
-            
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
     
@@ -1584,14 +1437,19 @@ class TimetableExtractor:
         otc_la_merge.rename(columns = {'service_number':'LineName'}, inplace = True)
         
         #merge OTC service level data with BODS service level data
-        full_service_code_with_atco = otc_la_merge[['service_code','LineName','op_name','ATCO Code','in']].add_suffix('_otc').merge(bods_la_merge.add_suffix('_bods'),how='outer',right_on=['ServiceCode_bods','ATCO Code_bods'],left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
+        full_service_code_with_atco = otc_la_merge[
+            ['service_code', 'LineName', 'op_name', 'ATCO Code', 'in', 'auth_description']].add_suffix('_otc').merge(
+            bods_la_merge.add_suffix('_bods'), how='outer', right_on=['ServiceCode_bods', 'ATCO Code_bods'],
+            left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
 
         #coalesce service code and atco code cols
         full_service_code_with_atco['service_code'] = full_service_code_with_atco['service_code_otc'].combine_first(full_service_code_with_atco['ServiceCode_bods'])
         full_service_code_with_atco['atco_code'] = full_service_code_with_atco['ATCO Code_otc'].combine_first(full_service_code_with_atco['ATCO Code_bods'])
 
         #keep only necessary cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods']]
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc']]
 
         #add admin area name
         full_service_code_with_atco = full_service_code_with_atco.merge(la_lookup[['Admin Area Name associated with ATCO Code','ATCO Code']],how='left',left_on='atco_code',right_on='ATCO Code').drop_duplicates()
@@ -1607,12 +1465,16 @@ class TimetableExtractor:
         #replace nulls with string so groupby doesnt omit them
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].fillna('xxxxx')
         #groupby to concat the bods line nos together
-        full_service_code_with_atco = full_service_code_with_atco.groupby(['service_code','LineName_otc', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg({'LineName_bods' : lambda x:','.join(x)})
+        full_service_code_with_atco = full_service_code_with_atco.groupby(
+            ['service_code', 'LineName_otc', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc', 'in_bods',
+             'auth_description_otc', 'Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg(
+            {'LineName_bods': lambda x: ','.join(x)})
         #regenerate the nulls
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].replace('xxxxx',None)
         #reorder cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code']]
-
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc', 'Admin Area Name associated with ATCO Code']]
         return full_service_code_with_atco
 
     def services_on_bods_or_otc_by_area_mi(self):
@@ -1650,16 +1512,18 @@ class TimetableExtractor:
         #try except ensures that this reads in lookup file whether pip installing the library, or cloning the repo from GitHub
         try:
             #import the csv file as a text string from the BODSDataExtractor package
-            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor','ATCO_code_to_LA_lookup.csv')
-            
+            atco_lookup_file = importlib.resources.read_text('BODSDataExtractor',
+                                                             'BODSDataExtractor/ATCO_code_to_LA_lookup.csv')
             #wrap lookup_file string into a stringIO object so it can be read by pandas
             atco_lookup_string = io.StringIO(atco_lookup_file)
 
             la_lookup = pd.read_csv(atco_lookup_string ,dtype={'ATCO Code':str})
+
+
             
         except:
             la_lookup = pd.read_csv('ATCO_code_to_LA_lookup.csv',dtype={'ATCO Code':str})
-    
+
 
 
         #fetch latest version of OTC database
@@ -1679,14 +1543,19 @@ class TimetableExtractor:
         otc_la_merge.rename(columns = {'service_number':'LineName'}, inplace = True)
         
         #merge OTC service level data with BODS service level data
-        full_service_code_with_atco = otc_la_merge[['service_code','LineName','op_name','ATCO Code','in']].add_suffix('_otc').merge(bods_la_merge.add_suffix('_bods'),how='outer',right_on=['ServiceCode_bods','ATCO Code_bods'],left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
+        full_service_code_with_atco = otc_la_merge[
+            ['service_code', 'LineName', 'op_name', 'ATCO Code', 'in', 'auth_description']].add_suffix('_otc').merge(
+            bods_la_merge.add_suffix('_bods'), how='outer', right_on=['ServiceCode_bods', 'ATCO Code_bods'],
+            left_on=['service_code_otc', 'ATCO Code_otc']).drop_duplicates()
 
         #coalesce service code and atco code cols
         full_service_code_with_atco['service_code'] = full_service_code_with_atco['service_code_otc'].combine_first(full_service_code_with_atco['ServiceCode_bods'])
         full_service_code_with_atco['atco_code'] = full_service_code_with_atco['ATCO Code_otc'].combine_first(full_service_code_with_atco['ATCO Code_bods'])
 
         #keep only necessary cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods']]
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc']]
 
         #add admin area name
         full_service_code_with_atco = full_service_code_with_atco.merge(la_lookup[['Admin Area Name associated with ATCO Code','ATCO Code']],how='left',left_on='atco_code',right_on='ATCO Code').drop_duplicates()
@@ -1705,12 +1574,16 @@ class TimetableExtractor:
         #replace nulls with string so groupby doesnt omit them
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].fillna('xxxxx')
         #groupby to concat the bods line nos together
-        full_service_code_with_atco = full_service_code_with_atco.groupby(['service_code','LineName_otc', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg({'LineName_bods' : lambda x:','.join(x)})
+        full_service_code_with_atco = full_service_code_with_atco.groupby(
+            ['service_code', 'LineName_otc', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc', 'in_bods',
+             'auth_description_otc', 'Admin Area Name associated with ATCO Code'], as_index=False, dropna=False).agg(
+            {'LineName_bods': lambda x: ','.join(x)})
         #regenerate the nulls
         full_service_code_with_atco['LineName_bods'] = full_service_code_with_atco['LineName_bods'].replace('xxxxx',None)
         #reorder cols
-        full_service_code_with_atco = full_service_code_with_atco[['service_code','LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods','atco_code','in_otc','in_bods','Admin Area Name associated with ATCO Code']]
-
+        full_service_code_with_atco = full_service_code_with_atco[
+            ['service_code', 'LineName_otc', 'LineName_bods', 'op_name_otc', 'OperatorName_bods', 'atco_code', 'in_otc',
+             'in_bods', 'auth_description_otc', 'Admin Area Name associated with ATCO Code']]
         return full_service_code_with_atco
 
     def services_on_bods_or_otc_by_area_mi_just_otc(self):
@@ -1741,6 +1614,45 @@ class xmlDataExtractor:
     def __init__(self, filepath):
         self.root = ET.parse(filepath).getroot()
         self.namespace = self.root.nsmap
+
+    def extract_service_level_info(self):
+        filename = self.extract_filename()
+        noc = self.extract_noc()
+        trading_name = self.extract_trading_name()
+        licence_number = self.extract_licence_number()
+        operator_short_name = self.extract_operator_short_name()
+        operator_code = self.extract_operator_code()
+        service_code = self.extract_service_code()
+        line_name = self.extract_line_name()
+        public_use = self.extract_public_use()
+        operating_days = self.extract_operating_days()
+        service_origin = self.extract_service_origin()
+        service_destination = self.extract_service_destination()
+        operating_period_start_date = self.extract_operating_period_start_date()
+        operating_period_end_date = self.extract_operating_period_end_date()
+        schema_version = self.extract_schema_version()
+        revision_number = self.extract_revision_number()
+        la_code = self.extract_la_code()
+
+        return [
+            filename,
+            noc,
+            trading_name,
+            licence_number,
+            operator_short_name,
+            operator_code,
+            service_code,
+            line_name,
+            public_use,
+            operating_days,
+            service_origin,
+            service_destination,
+            operating_period_start_date,
+            operating_period_end_date,
+            schema_version,
+            revision_number,
+            la_code,
+        ]
 
     def extract_filename(self):
         
@@ -1877,6 +1789,108 @@ class xmlDataExtractor:
         public_use = [i.text for i in data]
         
         return public_use
+    
+    def extract_operating_days(self):
+        
+        '''
+        Extracts the regular operating days from an xml file in a given location with a known namespace.
+        Namespace can be found in constants.py and depends on if data is timetable or fares data
+        
+        '''
+        #find all text in the given xpath, return as a element object
+        #Check service line level first
+        data = self.root.findall("Services//Service/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        
+        #if empty we proceed to service line level
+        if data==[]:
+            data = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/RegularDayType/DaysOfWeek/", self.namespace)
+        else:
+            pass
+
+        daysoperating=[]
+        
+        for count, value in enumerate(data):
+            
+            #convert each element into a string
+            day=str(data[count])
+            
+            #only keep the element data associated with the day of the week
+            changedday=day[42:52]
+            
+            #split up the weekday string
+            before, sep, after = changedday.partition(' ')
+            
+            #keep the string data before the partition mentioned above
+            changedday = before
+        
+            daysoperating.append(changedday)
+            
+        #remove duplicates from the operating days extracted
+        setoperatingdays=set(daysoperating)
+        
+        #change the operating days into a list format so they can be ordered
+        operating_day_list=list(setoperatingdays)
+        
+        #adding dictionary variables and values to "day" dictionary
+        
+        day={}
+        day['Monday']=1
+        day['Tuesday']=2
+        day['Wednesday']=3
+        day['Thursday']=4
+        day['Friday']=5
+        day['Saturday']=6
+        day['Sunday']=7
+        
+        brand_new={}
+
+        
+        #checking if the day of the week is in the above dictionary so we can sort the days
+        for i in operating_day_list:
+            if i in day:
+                brand_new.update({i:day[i]})
+        
+        #sorting the days of operation
+        sortit=sorted(brand_new.items(), key=lambda x:x[1])
+        
+        length=len(sortit)
+
+        operating_days=""
+        
+        consecutive=True
+        
+        
+        #checking to see if the days in the list are not consective
+        
+        for i in range(length-1):
+            if sortit[i+1][1]-sortit[i][1]!=1:
+                consecutive=False
+                break
+
+                     
+        # if there are no days of operation entered
+        if length==0:
+            operating_days="None"
+        
+        #if there is only one day of operation
+        elif length==1:
+            operating_days=sortit[0][0]
+        
+        #if the operating days are not consecutive, they're seperated by commas
+        elif consecutive==False:
+            for i in range(length):
+                operating_days= operating_days + sortit[i][0] + ","
+                
+        #if consecutive, operating days are given as a range           
+        else:
+           # print(sortit)
+            operating_days=sortit[0][0] + "-" + sortit[-1][0]
+                
+
+        operating_days=[operating_days]
+        
+
+        return operating_days
 
     def extract_service_origin(self):
         
@@ -1938,14 +1952,8 @@ class xmlDataExtractor:
         operating_period_end_date = [i.text if len(i.text) >0 else 'No Data' for i in data]
         
         return operating_period_end_date
-
-        #returns 'no data' if this is blank as many are empty
-        #if len(operating_period_end_date) > 0:
-            
-            #return operating_period_end_date
-        
-        #else:
-            #return ['No Data']
+    
+             
        
     def extract_schema_version(self):
         
@@ -1996,8 +2004,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-
-
-    
-
-

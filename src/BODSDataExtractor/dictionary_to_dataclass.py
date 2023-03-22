@@ -295,6 +295,30 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
     if not first_jptl:
         return to_sequence
 
+def collate_vjs(direction, collated_timetable):
+    '''Combines all vehicle journeys together for inbound or outbound'''
+
+    if direction.empty:
+        pass
+    elif collated_timetable.empty:
+        # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
+        collated_timetable=collated_timetable.merge(direction, how='outer', left_index=True, right_index=True)
+    else:
+        # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
+        collated_timetable = pd.merge(direction, collated_timetable, on=['Stop Point Ref', "Sequence Number"], how='outer').fillna("N/A")
+
+    return collated_timetable
+
+def reformat_times(direction):
+    '''Turns the time deltas into time of day, final column is formatted as string for now outbound'''
+    direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].cumsum()
+    direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
+    direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
+
+    return direction[f"{vj.VehicleJourneyCode}"]
+
+
+
 
 with open(r'ANEA_MONFRI.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
@@ -324,12 +348,11 @@ collated_timetable_inbound= pd.DataFrame()
 
 collated_timetable_outbound= pd.DataFrame()
 
+
 # Take an example vehicle journey to start with, later we will iterate through multiples ones
 
 for vj in vehicle_journey.VehicleJourney:
 
-    #initial timetable containing sequence number and stop point ref, other vjs are to be appended here, if they have a matching the stop point ref
-    initial_timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref"])
 
     departure_time = pd.Timedelta(vj.DepartureTime)
 
@@ -341,6 +364,7 @@ for vj in vehicle_journey.VehicleJourney:
 
     # init empty timetable for inbound Vehicle journey
     inbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", f"{vj.VehicleJourneyCode}"])
+
 
 
     # Create vars for relevant indices of this vehicle journey
@@ -375,18 +399,6 @@ for vj in vehicle_journey.VehicleJourney:
 
 
             #add to sequence number and stop point ref to the initial timetable
-            initial_timetable=pd.concat([initial_timetable, first_timetable_row[["Sequence Number", "Stop Point Ref"]]], ignore_index=True)
-
-            timetable = pd.concat([timetable, first_timetable_row], ignore_index=True)
-
-
-            # Add second sequence etc
-            timetable.loc[len(timetable)] = timetable_sequence[1]
-
-            #acessing stop point and sequence number
-            #consideration if vj is longer
-            initial_timetable.loc[len(initial_timetable)]= timetable_sequence[1][0],timetable_sequence[1][1]
-
 
             if direction == 'outbound':
                 outbound = pd.concat([outbound, first_timetable_row], ignore_index=True)
@@ -397,20 +409,8 @@ for vj in vehicle_journey.VehicleJourney:
             else:
                 print("Unknown Direction")
 
-
-            #if initial_timetable.shape<inbound.shape:
-
-
-
-
-
-
-
-
         else:
             timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time)
-            timetable.loc[len(timetable)] = timetable_sequence
-
 
             if direction == 'outbound':
                 outbound.loc[len(outbound)] = timetable_sequence
@@ -420,59 +420,12 @@ for vj in vehicle_journey.VehicleJourney:
                 print("Unknown Direction")
 
 
-            #acessing stop point and sequence number
-            initial_timetable.loc[len(initial_timetable)] = timetable_sequence[0], timetable_sequence[1]
-            if initial_timetable.shape[0]<outbound.shape[0]:
-                print("redfine")
+    outbound[f"{vj.VehicleJourneyCode}"]= reformat_times(outbound)
 
+    inbound[f"{vj.VehicleJourneyCode}"] = reformat_times(inbound)
 
+    #collect vj information together for outbound
+    collated_timetable_outbound=collate_vjs(outbound, collated_timetable_outbound)
 
-
-
-    # Turns the time deltas into time of day, final column is formatted as string for now
-    timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].cumsum()
-    timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
-    timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
-
-    # Turns the time deltas into time of day, final column is formatted as string for now outbound
-    outbound[f"{vj.VehicleJourneyCode}"] = outbound[f"{vj.VehicleJourneyCode}"].cumsum()
-    outbound[f"{vj.VehicleJourneyCode}"] = outbound[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
-    outbound[f"{vj.VehicleJourneyCode}"] = outbound[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
-
-    # Turns the time deltas into time of day, final column is formatted as string for now outbound
-    inbound[f"{vj.VehicleJourneyCode}"] = inbound[f"{vj.VehicleJourneyCode}"].cumsum()
-    inbound[f"{vj.VehicleJourneyCode}"] = inbound[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
-    inbound[f"{vj.VehicleJourneyCode}"] = inbound[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
-
-    #reworking timetable matching
-    ############################
-    #print(outbound.shape[0])
-    #if outbound.shape[0] > collated_timetable_outbound.shape[0]:
-    #    print(outbound.shape[0])
-
-    #print(inbound.shape[0])
-    #if inbound.shape[0] > initial_timetable.shape[0]:
-        #print(inbound.shape[0])
-
-
-    #OUTBOUND
-    #match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-
-    #no need to have a merged outbound
-    merged_timetable_outbound = pd.merge(outbound, initial_timetable, on=['Stop Point Ref',"Sequence Number"]).sort_index(axis=1)
-    if merged_timetable_outbound.empty:
-        pass
-    elif collated_timetable_outbound.empty:
-        collated_timetable_outbound=collated_timetable_outbound.merge(merged_timetable_outbound, how='outer', left_index=True, right_index=True)
-    else:
-        collated_timetable_outbound = pd.merge(merged_timetable_outbound, collated_timetable_outbound, on=['Stop Point Ref', "Sequence Number"])
-
-    #INBOUND
-    #match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-    merged_timetable_inbound = pd.merge(inbound, initial_timetable, on=['Stop Point Ref',"Sequence Number"]).sort_index(axis=1)
-    if merged_timetable_inbound.empty:
-        pass
-    elif collated_timetable_inbound.empty:
-        collated_timetable_inbound=collated_timetable_inbound.merge(merged_timetable_inbound, how='outer', left_index=True, right_index=True)
-    else:
-        collated_timetable_inbound = pd.merge(merged_timetable_inbound, collated_timetable_inbound, on=['Stop Point Ref',"Sequence Number"])
+    # collect vj information together for inbound
+    collated_timetable_inbound = collate_vjs(inbound, collated_timetable_inbound)

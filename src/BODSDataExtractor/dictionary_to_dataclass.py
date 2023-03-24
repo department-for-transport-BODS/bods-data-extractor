@@ -430,14 +430,14 @@ for vj in vehicle_journey.VehicleJourney:
     outbound[f"{vj.VehicleJourneyCode}"]= reformat_times(outbound)
 
     #mention with previous outbound/inbound checks
-    outbound.loc[len(outbound)] = ["RouteID", "->", RouteRef]
-    outbound.loc[len(outbound)] = ["Journey Pattern ", "->", JourneyPattern_id]
+    outbound.loc[0.5] = ["RouteID", "->", RouteRef]
+    outbound.loc[0.6] = ["Journey Pattern ", "->", JourneyPattern_id]
 
     inbound[f"{vj.VehicleJourneyCode}"] = reformat_times(inbound)
-    
+
     #mention with previous outbound/inbound checks
-    #inbound.loc[len(inbound)] = ["RouteID", "->", RouteRef]
-    #inbound.loc[len(inbound)] = ["Journey Pattern ", "->", JourneyPattern_id]
+    #inbound.loc[-0.5] = ["RouteID", "->", RouteRef]
+    #inbound.loc[-0.6] = ["Journey Pattern ", "->", JourneyPattern_id]
 
     #collect vj information together for outbound
     collated_timetable_outbound=collate_vjs(outbound, collated_timetable_outbound)

@@ -39,12 +39,12 @@ class Location:
 class AnnotatedStopPointRef:
     StopPointRef: str
     CommonName: str
-    Location: Location
+    Location: Optional[Location]
 
 
 @dataclass
 class StopPoints:
-    AnnotatedStopPointRef: AnnotatedStopPointRef
+    AnnotatedStopPointRef: List[AnnotatedStopPointRef]
 
 
 @dataclass
@@ -246,6 +246,73 @@ class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
 
 
+def extract_timetable_operating_days():
+    if service_object.OperatingProfile==None:
+        print("Look in Vj")
+
+
+    else:
+        days=service_object.OperatingProfile.RegularDayType.DaysOfWeek
+
+        operating_day_list = list(days)
+
+        # adding dictionary variables and values to "day" dictionary
+
+        day = {}
+        day['Monday'] = 1
+        day['Tuesday'] = 2
+        day['Wednesday'] = 3
+        day['Thursday'] = 4
+        day['Friday'] = 5
+        day['Saturday'] = 6
+        day['Sunday'] = 7
+
+        brand_new = {}
+
+        # checking if the day of the week is in the above dictionary so we can sort the days
+        for i in operating_day_list:
+            if i in day:
+                brand_new.update({i: day[i]})
+
+        # sorting the days of operation
+        sortit = sorted(brand_new.items(), key=lambda x: x[1])
+
+        length = len(sortit)
+
+        operating_days = ""
+
+        consecutive = True
+
+        # checking to see if the days in the list are not consective
+
+        for i in range(length - 1):
+            if sortit[i + 1][1] - sortit[i][1] != 1:
+                consecutive = False
+                break
+
+        # if there are no days of operation entered
+        if length == 0:
+            operating_days = "None"
+
+        # if there is only one day of operation
+        elif length == 1:
+            operating_days = sortit[0][0]
+
+        # if the operating days are not consecutive, they're seperated by commas
+        elif consecutive == False:
+            for i in range(length):
+                operating_days = operating_days + sortit[i][0] + ","
+
+        # if consecutive, operating days are given as a range
+        else:
+            # print(sortit)
+            operating_days = sortit[0][0] + "-" + sortit[-1][0]
+
+
+        return operating_days
+
+
+
 def extract_runtimes(journey_pattern_timing_link):
 
     """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be cecked"""
@@ -274,20 +341,46 @@ def extract_runtimes(journey_pattern_timing_link):
     else:
         return runtime
 
+def extract_common_name(StopPointRef):
+
+    for stop in stop_object.AnnotatedStopPointRef:
+        if StopPointRef==stop.StopPointRef:
+            if stop.Location==None:
+                common_name = stop.CommonName
+                latitude = "-"
+                longitude = "-"
+                return common_name, latitude, longitude
+            else:
+                common_name=stop.CommonName
+                latitude=stop.Location.Latitude
+                longitude=stop.Location.Longitude
+                return common_name, latitude,longitude
+        else:
+            pass
+
 
 def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
     """Returns the sequence number, stop point ref and time for a JPTL to be added to a timetable df"""
 
     runtime = extract_runtimes(jptl)
+    common_name,latitude,longitude=extract_common_name(str(jptl.To.StopPointRef))
+
 
     to_sequence = [int(jptl.To.sequence_number),
                    str(jptl.To.StopPointRef),
+                   latitude,
+                   longitude,
+                   common_name,
                    pd.Timedelta(runtime)]
 
     if first_jptl:
+        common_name,latitude,longitude = extract_common_name(jptl.From.StopPointRef)
 
         from_sequence = [jptl.From.sequence_number,
                          jptl.From.StopPointRef,
+                         latitude,
+                         longitude,
+                         common_name,
                          vj_departure_time]
 
         return from_sequence, to_sequence
@@ -305,7 +398,7 @@ def collate_vjs(direction, collated_timetable):
         collated_timetable=collated_timetable.merge(direction, how='outer', left_index=True, right_index=True)
     else:
         # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-        collated_timetable = pd.merge(direction, collated_timetable, on=['Stop Point Ref', "Sequence Number"], how='outer').fillna("-")
+        collated_timetable = pd.merge(direction, collated_timetable, on=['Stop Point Ref', "Sequence Number","Latitude","Longitude","Common Name",], how='outer').fillna("-")
 
     return collated_timetable
 
@@ -326,10 +419,12 @@ with open(r'ANEA_MONFRI.xml', 'r', encoding='utf-8') as file:
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
     services_json = xml_root['Services']['Service']
+    stops_json = xml_root["StopPoints"]
     vehicle_journey_json = xml_root['VehicleJourneys']
     journey_pattern_json = xml_root['JourneyPatternSections']
 
     service_object = from_dict(data_class=Service, data=services_json)
+    stop_object = from_dict(data_class=StopPoints, data=stops_json)
     vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
     journey_pattern_section_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
 
@@ -358,13 +453,13 @@ for vj in vehicle_journey.VehicleJourney:
     departure_time = pd.Timedelta(vj.DepartureTime)
 
     # Init empty timetable for a single Vehicle journey
-    timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", f"{vj.VehicleJourneyCode}"])
+    timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref","Latitude","Longitude","Common Name", f"{vj.VehicleJourneyCode}"])
 
     #init empty timetable for outbound Vehicle journey
-    outbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", f"{vj.VehicleJourneyCode}"])
+    outbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref","Latitude","Longitude","Common Name", f"{vj.VehicleJourneyCode}"])
 
     # init empty timetable for inbound Vehicle journey
-    inbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", f"{vj.VehicleJourneyCode}"])
+    inbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref","Latitude","Longitude","Common Name",  f"{vj.VehicleJourneyCode}"])
 
 
 
@@ -372,6 +467,9 @@ for vj in vehicle_journey.VehicleJourney:
     vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
     vehicle_journey_jps_index = journey_pattern_section_index[journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
     #vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index].id
+
+
+    lineref=vj.LineRef.split(':')[-1]
 
     # Mark the first JPTL
     first = True
@@ -388,6 +486,9 @@ for vj in vehicle_journey.VehicleJourney:
         RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
 
         JourneyPattern_id=  service_object.StandardService.JourneyPattern[vehicle_journey_jp_index]._id
+
+        operating_days = extract_timetable_operating_days()
+
 
         # first JPTL should use 'From' AND 'To' stop data
         if first:
@@ -414,7 +515,7 @@ for vj in vehicle_journey.VehicleJourney:
                 inbound = pd.concat([inbound, first_timetable_row], ignore_index=True)
                 inbound.loc[len(inbound)] = timetable_sequence[1]
             else:
-                print("Unknown Direction")
+                print(f'Unknown Direction: {direction}')
 
         else:
             timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time)
@@ -424,7 +525,7 @@ for vj in vehicle_journey.VehicleJourney:
             elif direction == 'inbound':
                 inbound.loc[len(inbound)] = timetable_sequence
             else:
-                print("Unknown Direction")
+                print(f'Unknown Direction: {direction}')
 
 
     outbound[f"{vj.VehicleJourneyCode}"]= reformat_times(outbound)
@@ -432,20 +533,24 @@ for vj in vehicle_journey.VehicleJourney:
     #mention with previous outbound/inbound checks
 
     if outbound.empty == False:
-        outbound.loc[-1] = ["RouteID", "->", RouteRef]
-        outbound.loc[-2] = ["Journey Pattern ", "->", JourneyPattern_id]
+        outbound.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
+        outbound.loc[-2] = ["Journey Pattern ","->", "->","->", "->", JourneyPattern_id]
+        outbound.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
+        outbound.loc[-4] = ["Line", "->", "->", "->", "->", lineref]
         outbound.index = outbound.index + 1  # shifting index
         outbound.sort_index(inplace=True)
 
     inbound[f"{vj.VehicleJourneyCode}"] = reformat_times(inbound)
 
     if inbound.empty == False:
-        inbound.loc[-1] = ["RouteID", "->", RouteRef]
-        inbound.loc[-2] = ["Journey Pattern ", "->", JourneyPattern_id]
+        inbound.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
+        inbound.loc[-2] = ["Journey Pattern ", "->", "->", "->", "->", JourneyPattern_id]
+        inbound.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
+        inbound.loc[-4] = ["Line", "->", "->", "->", "->", lineref]
         inbound.index = inbound.index + 1  # shifting index
         inbound.sort_index(inplace=True)
 
-    
+
 
 
     #collect vj information together for outbound

@@ -305,7 +305,7 @@ def collate_vjs(direction, collated_timetable):
         collated_timetable=collated_timetable.merge(direction, how='outer', left_index=True, right_index=True)
     else:
         # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-        collated_timetable = pd.merge(direction, collated_timetable, on=['Stop Point Ref', "Sequence Number"], how='outer').fillna("N/A")
+        collated_timetable = pd.merge(direction, collated_timetable, on=['Stop Point Ref', "Sequence Number"], how='outer').fillna("-")
 
     return collated_timetable
 
@@ -314,6 +314,7 @@ def reformat_times(direction):
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].cumsum()
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
+
 
     return direction[f"{vj.VehicleJourneyCode}"]
 
@@ -384,6 +385,10 @@ for vj in vehicle_journey.VehicleJourney:
 
         direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
 
+        RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
+
+        JourneyPattern_id=  service_object.StandardService.JourneyPattern[vehicle_journey_jp_index]._id
+
         # first JPTL should use 'From' AND 'To' stop data
         if first:
 
@@ -394,6 +399,7 @@ for vj in vehicle_journey.VehicleJourney:
                                                    departure_time,
                                                    first_jptl=True)
 
+
             # Add first sequence, stop ref and departure time
             first_timetable_row = pd.DataFrame([timetable_sequence[0]], columns=timetable.columns)
 
@@ -403,6 +409,7 @@ for vj in vehicle_journey.VehicleJourney:
             if direction == 'outbound':
                 outbound = pd.concat([outbound, first_timetable_row], ignore_index=True)
                 outbound.loc[len(outbound)] = timetable_sequence[1]
+
             elif direction == 'inbound':
                 inbound = pd.concat([inbound, first_timetable_row], ignore_index=True)
                 inbound.loc[len(inbound)] = timetable_sequence[1]
@@ -422,7 +429,15 @@ for vj in vehicle_journey.VehicleJourney:
 
     outbound[f"{vj.VehicleJourneyCode}"]= reformat_times(outbound)
 
+    #mention with previous outbound/inbound checks
+    outbound.loc[len(outbound)] = ["RouteID", "->", RouteRef]
+    outbound.loc[len(outbound)] = ["Journey Pattern ", "->", JourneyPattern_id]
+
     inbound[f"{vj.VehicleJourneyCode}"] = reformat_times(inbound)
+    
+    #mention with previous outbound/inbound checks
+    #inbound.loc[len(inbound)] = ["RouteID", "->", RouteRef]
+    #inbound.loc[len(inbound)] = ["Journey Pattern ", "->", JourneyPattern_id]
 
     #collect vj information together for outbound
     collated_timetable_outbound=collate_vjs(outbound, collated_timetable_outbound)

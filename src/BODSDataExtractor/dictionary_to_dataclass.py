@@ -246,70 +246,64 @@ class JourneyPatternSections:
     JourneyPatternSection: List[JourneyPatternSection]
 
 
-def extract_timetable_operating_days():
-    if service_object.OperatingProfile==None:
-        print("Look in Vj")
+def extract_timetable_operating_days(days):
 
+    operating_day_list = list(days)
 
-    else:
-        days=service_object.OperatingProfile.RegularDayType.DaysOfWeek
+    # adding dictionary variables and values to "day" dictionary
 
-        operating_day_list = list(days)
+    day = {}
+    day['Monday'] = 1
+    day['Tuesday'] = 2
+    day['Wednesday'] = 3
+    day['Thursday'] = 4
+    day['Friday'] = 5
+    day['Saturday'] = 6
+    day['Sunday'] = 7
 
-        # adding dictionary variables and values to "day" dictionary
+    brand_new = {}
 
-        day = {}
-        day['Monday'] = 1
-        day['Tuesday'] = 2
-        day['Wednesday'] = 3
-        day['Thursday'] = 4
-        day['Friday'] = 5
-        day['Saturday'] = 6
-        day['Sunday'] = 7
-
-        brand_new = {}
-
-        # checking if the day of the week is in the above dictionary so we can sort the days
-        for i in operating_day_list:
-            if i in day:
-                brand_new.update({i: day[i]})
+    # checking if the day of the week is in the above dictionary so we can sort the days
+    for i in operating_day_list:
+        if i in day:
+            brand_new.update({i: day[i]})
 
         # sorting the days of operation
-        sortit = sorted(brand_new.items(), key=lambda x: x[1])
+    sortit = sorted(brand_new.items(), key=lambda x: x[1])
 
-        length = len(sortit)
+    length = len(sortit)
 
-        operating_days = ""
+    operating_days = ""
 
-        consecutive = True
+    consecutive = True
 
-        # checking to see if the days in the list are not consective
+    # checking to see if the days in the list are not consective
 
-        for i in range(length - 1):
-            if sortit[i + 1][1] - sortit[i][1] != 1:
-                consecutive = False
-                break
+    for i in range(length - 1):
+        if sortit[i + 1][1] - sortit[i][1] != 1:
+            consecutive = False
+            break
 
-        # if there are no days of operation entered
-        if length == 0:
-            operating_days = "None"
+    # if there are no days of operation entered
+    if length == 0:
+        operating_days = "None"
 
-        # if there is only one day of operation
-        elif length == 1:
-            operating_days = sortit[0][0]
+    # if there is only one day of operation
+    elif length == 1:
+        operating_days = sortit[0][0]
 
         # if the operating days are not consecutive, they're seperated by commas
-        elif consecutive == False:
-            for i in range(length):
-                operating_days = operating_days + sortit[i][0] + ","
+    elif consecutive == False:
+        for i in range(length):
+            operating_days = operating_days + sortit[i][0] + ","
 
         # if consecutive, operating days are given as a range
-        else:
-            # print(sortit)
-            operating_days = sortit[0][0] + "-" + sortit[-1][0]
+    else:
+        # print(sortit)
+        operating_days = sortit[0][0] + "-" + sortit[-1][0]
 
 
-        return operating_days
+    return operating_days
 
 
 
@@ -408,9 +402,17 @@ def reformat_times(direction):
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
 
-
     return direction[f"{vj.VehicleJourneyCode}"]
 
+def add_dataframe_headers(direction):
+    direction.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
+    direction.loc[-2] = ["Journey Pattern ", "->", "->", "->", "->", JourneyPattern_id]
+    direction.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
+    direction.loc[-4] = ["Line", "->", "->", "->", "->", lineref]
+    direction.index = direction.index + 1  # shifting index
+    direction.sort_index(inplace=True)
+
+    return direction
 
 
 
@@ -468,8 +470,10 @@ for vj in vehicle_journey.VehicleJourney:
     vehicle_journey_jps_index = journey_pattern_section_index[journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
     #vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index].id
 
-
-    lineref=vj.LineRef.split(':')[-1]
+    if vj.LineRef[-1]==":":
+        lineref = vj.LineRef.split(':')[-2]
+    else:
+        lineref=vj.LineRef.split(':')[-1]
 
     # Mark the first JPTL
     first = True
@@ -487,7 +491,12 @@ for vj in vehicle_journey.VehicleJourney:
 
         JourneyPattern_id=  service_object.StandardService.JourneyPattern[vehicle_journey_jp_index]._id
 
-        operating_days = extract_timetable_operating_days()
+        if vj.OperatingProfile== None:
+            days = service_object.OperatingProfile.RegularDayType.DaysOfWeek
+        else:
+            days=vj.OperatingProfile.RegularDayType.DaysOfWeek
+
+        operating_days = extract_timetable_operating_days(days)
 
 
         # first JPTL should use 'From' AND 'To' stop data
@@ -529,28 +538,12 @@ for vj in vehicle_journey.VehicleJourney:
 
 
     outbound[f"{vj.VehicleJourneyCode}"]= reformat_times(outbound)
-
-    #mention with previous outbound/inbound checks
-
-    if outbound.empty == False:
-        outbound.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
-        outbound.loc[-2] = ["Journey Pattern ","->", "->","->", "->", JourneyPattern_id]
-        outbound.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
-        outbound.loc[-4] = ["Line", "->", "->", "->", "->", lineref]
-        outbound.index = outbound.index + 1  # shifting index
-        outbound.sort_index(inplace=True)
+    if outbound.empty==False:
+        outbound=add_dataframe_headers(outbound)
 
     inbound[f"{vj.VehicleJourneyCode}"] = reformat_times(inbound)
-
     if inbound.empty == False:
-        inbound.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
-        inbound.loc[-2] = ["Journey Pattern ", "->", "->", "->", "->", JourneyPattern_id]
-        inbound.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
-        inbound.loc[-4] = ["Line", "->", "->", "->", "->", lineref]
-        inbound.index = inbound.index + 1  # shifting index
-        inbound.sort_index(inplace=True)
-
-
+        inbound=add_dataframe_headers(inbound)
 
 
     #collect vj information together for outbound

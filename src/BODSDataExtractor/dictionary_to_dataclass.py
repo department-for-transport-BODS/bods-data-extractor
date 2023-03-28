@@ -247,6 +247,7 @@ class JourneyPatternSections:
 
 
 def extract_timetable_operating_days(days):
+    '''Ensuring the operating days are ordered appropriately'''
 
     operating_day_list = list(days)
 
@@ -309,7 +310,7 @@ def extract_timetable_operating_days(days):
 
 def extract_runtimes(journey_pattern_timing_link):
 
-    """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be cecked"""
+    """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be checked"""
 
     # extract run times from jptl
     runtime = journey_pattern_timing_link.RunTime
@@ -336,6 +337,7 @@ def extract_runtimes(journey_pattern_timing_link):
         return runtime
 
 def extract_common_name(StopPointRef):
+    """Extract information about the name of the stop including longitude and latitude"""
 
     for stop in stop_object.AnnotatedStopPointRef:
         if StopPointRef==stop.StopPointRef:
@@ -405,6 +407,7 @@ def reformat_times(direction):
     return direction[f"{vj.VehicleJourneyCode}"]
 
 def add_dataframe_headers(direction):
+    "Populate headers with information associated to each individual VJ"
     direction.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
     direction.loc[-2] = ["Journey Pattern ", "->", "->", "->", "->", JourneyPattern_id]
     direction.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
@@ -416,7 +419,7 @@ def add_dataframe_headers(direction):
 
 
 
-with open(r'ANEA_MONFRI.xml', 'r', encoding='utf-8') as file:
+with open(r'ANEA.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
@@ -545,9 +548,11 @@ for vj in vehicle_journey.VehicleJourney:
     if inbound.empty == False:
         inbound=add_dataframe_headers(inbound)
 
-
     #collect vj information together for outbound
     collated_timetable_outbound=collate_vjs(outbound, collated_timetable_outbound)
 
     # collect vj information together for inbound
     collated_timetable_inbound = collate_vjs(inbound, collated_timetable_inbound)
+
+collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:, ::-1].values
+collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:, ::-1].values

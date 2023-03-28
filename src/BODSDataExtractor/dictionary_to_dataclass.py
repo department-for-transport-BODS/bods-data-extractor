@@ -247,7 +247,7 @@ class JourneyPatternSections:
 
 
 def extract_timetable_operating_days(days):
-    '''Ensuring the operating days are ordered appropriately'''
+    ''' Ensuring the operating days are ordered appropriately '''
 
     operating_day_list = list(days)
 
@@ -359,10 +359,10 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
     """Returns the sequence number, stop point ref and time for a JPTL to be added to a timetable df"""
 
     runtime = extract_runtimes(jptl)
-    common_name,latitude,longitude=extract_common_name(str(jptl.To.StopPointRef))
+    common_name, latitude, longitude = extract_common_name(str(jptl.To.StopPointRef))
 
 
-    to_sequence = [int(jptl.To.sequence_number),
+    to_sequence=[int(jptl.To.sequence_number),
                    str(jptl.To.StopPointRef),
                    latitude,
                    longitude,
@@ -370,10 +370,10 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
                    pd.Timedelta(runtime)]
 
     if first_jptl:
-        common_name,latitude,longitude = extract_common_name(jptl.From.StopPointRef)
+        common_name, latitude, longitude = extract_common_name(jptl.From.StopPointRef)
 
-        from_sequence = [jptl.From.sequence_number,
-                         jptl.From.StopPointRef,
+        from_sequence = [int(jptl.From.sequence_number),
+                         str(jptl.From.StopPointRef),
                          latitude,
                          longitude,
                          common_name,
@@ -384,18 +384,24 @@ def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
     if not first_jptl:
         return to_sequence
 
-def collate_vjs(direction, collated_timetable):
+def collate_vjs(direction_df, collated_timetable):
     '''Combines all vehicle journeys together for inbound or outbound'''
 
-    if direction.empty:
+    if direction_df.empty:
         pass
     elif collated_timetable.empty:
         # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-        collated_timetable=collated_timetable.merge(direction, how='outer', left_index=True, right_index=True)
+        collated_timetable=collated_timetable.merge(direction_df, how='outer', left_index=True, right_index=True)
     else:
         # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-        collated_timetable = pd.merge(direction, collated_timetable, on=['Stop Point Ref', "Sequence Number","Latitude","Longitude","Common Name",], how='outer').fillna("-")
 
+        collated_timetable = pd.merge(direction_df, collated_timetable, on=["Sequence Number", 'Stop Point Ref', "Latitude","Longitude","Common Name"], how='outer', validate='1:m').fillna("-")
+        #print(direction_df["Sequence Number"] == collated_timetable["Sequence Number"])
+        #print("d")
+        # print(direction_df['Stop Point Ref'] == collated_timetable['Stop Point Ref'])
+        # print(direction_df["Latitude"] == collated_timetable["Latitude"])
+        # print(direction_df["Longitude"] == collated_timetable["Longitude"])
+        # print(direction_df["Common Name"] == collated_timetable["Common Name"])
     return collated_timetable
 
 def reformat_times(direction):
@@ -418,8 +424,11 @@ def add_dataframe_headers(direction):
     return direction
 
 
+#def generate_timetable():
 
-with open(r'ANEA.xml', 'r', encoding='utf-8') as file:
+#def create_dataclasses():
+
+with open(r'cham.xml', 'r', encoding='utf-8') as file:
     xml_text = file.read()
     xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
     xml_root = xml_json['TransXChange']
@@ -457,44 +466,36 @@ for vj in vehicle_journey.VehicleJourney:
 
     departure_time = pd.Timedelta(vj.DepartureTime)
 
-    # Init empty timetable for a single Vehicle journey
-    timetable = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref","Latitude","Longitude","Common Name", f"{vj.VehicleJourneyCode}"])
-
     #init empty timetable for outbound Vehicle journey
-    outbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref","Latitude","Longitude","Common Name", f"{vj.VehicleJourneyCode}"])
+    outbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", "Latitude", "Longitude", "Common Name", f"{vj.VehicleJourneyCode}"])
 
     # init empty timetable for inbound Vehicle journey
-    inbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref","Latitude","Longitude","Common Name",  f"{vj.VehicleJourneyCode}"])
-
-
+    inbound = pd.DataFrame(columns=["Sequence Number", "Stop Point Ref", "Latitude", "Longitude", "Common Name",  f"{vj.VehicleJourneyCode}"])
 
     # Create vars for relevant indices of this vehicle journey
     vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
     vehicle_journey_jps_index = journey_pattern_section_index[journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
     #vehicle_journey_jpsr = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jp_index].id
 
-    if vj.LineRef[-1]==":":
+    if vj.LineRef[-1] == ":":
         lineref = vj.LineRef.split(':')[-2]
     else:
-        lineref=vj.LineRef.split(':')[-1]
+        lineref = vj.LineRef.split(':')[-1]
+
+    direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
+
+    RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
+
+    JourneyPattern_id = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].id
 
     # Mark the first JPTL
     first = True
-
-    #intitalise_data_for_timetable()
 
     # Loop through relevant timing links
 
     for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink:
 
-
-        direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
-
-        RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
-
-        JourneyPattern_id=  service_object.StandardService.JourneyPattern[vehicle_journey_jp_index]._id
-
-        if vj.OperatingProfile== None:
+        if vj.OperatingProfile is None:
             days = service_object.OperatingProfile.RegularDayType.DaysOfWeek
         else:
             days=vj.OperatingProfile.RegularDayType.DaysOfWeek
@@ -514,7 +515,7 @@ for vj in vehicle_journey.VehicleJourney:
 
 
             # Add first sequence, stop ref and departure time
-            first_timetable_row = pd.DataFrame([timetable_sequence[0]], columns=timetable.columns)
+            first_timetable_row = pd.DataFrame([timetable_sequence[0]], columns=outbound.columns)
 
 
             #add to sequence number and stop point ref to the initial timetable
@@ -541,18 +542,26 @@ for vj in vehicle_journey.VehicleJourney:
 
 
     outbound[f"{vj.VehicleJourneyCode}"]= reformat_times(outbound)
-    if outbound.empty==False:
+    if outbound.empty is False:
         outbound=add_dataframe_headers(outbound)
+        #outbound.loc[5:, "Sequence Number"]= outbound.loc[5:, 'Sequence Number'].astype(int)
+
+
 
     inbound[f"{vj.VehicleJourneyCode}"] = reformat_times(inbound)
-    if inbound.empty == False:
+    if inbound.empty is False:
         inbound=add_dataframe_headers(inbound)
 
     #collect vj information together for outbound
+
+
     collated_timetable_outbound=collate_vjs(outbound, collated_timetable_outbound)
 
     # collect vj information together for inbound
     collated_timetable_inbound = collate_vjs(inbound, collated_timetable_inbound)
 
 collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:, ::-1].values
+collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(by="Sequence Number", ascending=True)
+
 collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:, ::-1].values
+#collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(by="Sequence Number", ascending=True)

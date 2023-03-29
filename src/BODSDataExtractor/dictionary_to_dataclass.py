@@ -310,7 +310,7 @@ def extract_timetable_operating_days(days):
 
 
 
-def extract_runtimes(journey_pattern_timing_link):
+def extract_runtimes(vj,journey_pattern_timing_link):
 
     """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be checked"""
 
@@ -358,10 +358,10 @@ def extract_common_name(StopPointRef):
             pass
 
 
-def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
+def next_jptl_in_sequence(jptl, vj_departure_time,vj, first_jptl=False):
     """Returns the sequence number, stop point ref and time for a JPTL to be added to a outboud or inbound df"""
 
-    runtime = extract_runtimes(jptl)
+    runtime = extract_runtimes(vj,jptl)
     common_name, latitude, longitude = extract_common_name(str(jptl.To.StopPointRef))
 
 
@@ -428,7 +428,7 @@ def add_dataframe_headers(direction,operating_days,JourneyPattern_id,RouteRef,li
 def create_dataclasses():
     '''Using the xml file, dataclasses are created for each element'''
 
-    with open(r'anea.xml', 'r', encoding='utf-8') as file:
+    with open(r'schn.xml', 'r', encoding='utf-8') as file:
         xml_text = file.read()
         xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
         xml_root = xml_json['TransXChange']
@@ -522,7 +522,7 @@ def generate_timetable(collated_timetable_outbound,collated_timetable_inbound):
                 first = False
 
                 timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink,
-                                                       departure_time,
+                                                       departure_time,vj,
                                                        first_jptl=True)
 
 
@@ -543,7 +543,7 @@ def generate_timetable(collated_timetable_outbound,collated_timetable_inbound):
                     print(f'Unknown Direction: {direction}')
 
             else:
-                timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time)
+                timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time,vj)
 
                 if direction == 'outbound':
                     outbound.loc[len(outbound)] = timetable_sequence
@@ -604,15 +604,15 @@ def organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
 
 
 #FOR PACKAGE INTEGRATION
-#def search_timetables_data():
-#    """For all timetables xml files, search through and extract the stop level information"""
-#    outbound_timetables = {}
-#    inbound_timetables = {}
-#    for xml_file in stop_level_data:
-#        service_object, stop_object, vehicle_journey, journey_pattern_section_object = create_dataclasses(xml_file)
-#        collated_timetable_outbound, collated_timetable_inbound, journey_pattern_section_index, journey_pattern_index, journey_pattern_list, base_time = initialise_values()
-#        collated_timetable_outbound, collated_timetable_inbound = organise_timetables(collated_timetable_outbound,
-#                                                                                     collated_timetable_inbound)
+def search_timetables_data():
+    """For all timetables xml files, search through and extract the stop level information"""
+    outbound_timetables = {}
+    inbound_timetables = {}
+    for xml_file in stop_level_data:
+        service_object, stop_object, vehicle_journey, journey_pattern_section_object = create_dataclasses(xml_file)
+        collated_timetable_outbound, collated_timetable_inbound, journey_pattern_section_index, journey_pattern_index, journey_pattern_list, base_time = initialise_values()
+        collated_timetable_outbound, collated_timetable_inbound = organise_timetables(collated_timetable_outbound,
+                                                                                     collated_timetable_inbound)
 
 
 outbound_timetables = {}

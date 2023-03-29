@@ -359,7 +359,7 @@ def extract_common_name(StopPointRef):
 
 
 def next_jptl_in_sequence(jptl, vj_departure_time, first_jptl=False):
-    """Returns the sequence number, stop point ref and time for a JPTL to be added to a timetable df"""
+    """Returns the sequence number, stop point ref and time for a JPTL to be added to a outboud or inbound df"""
 
     runtime = extract_runtimes(jptl)
     common_name, latitude, longitude = extract_common_name(str(jptl.To.StopPointRef))
@@ -402,7 +402,8 @@ def collate_vjs(direction_df, collated_timetable):
     return collated_timetable
 
 def reformat_times(direction,vj,base_time):
-    '''Turns the time deltas into time of day, final column is formatted as string for now outbound'''
+    '''Turns the time deltas into time of day, final column is formatted as string'''
+
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].cumsum()
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x + base_time)
     direction[f"{vj.VehicleJourneyCode}"] = direction[f"{vj.VehicleJourneyCode}"].map(lambda x: x.strftime('%H:%M'))
@@ -573,6 +574,7 @@ def generate_timetable(collated_timetable_outbound,collated_timetable_inbound):
 
 def organise_timetables(collated_timetable_outbound, collated_timetable_inbound):
     '''Ordering the timetables correctly'''
+    service_code = str(service_object.ServiceCode)
 
     collated_timetable_outbound, collated_timetable_inbound = generate_timetable(collated_timetable_outbound,
                                                                                  collated_timetable_inbound)
@@ -582,7 +584,12 @@ def organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
         collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:, ::-1].values
         # ensuring the sequence numbers are sorted in ascending order
         collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(by="Sequence Number",
-                                                                                                ascending=True)
+
+                                                                                              ascending=True)
+        #add this to a collection of outbound timetable dataframes in a dictionary
+        outbound_timetables[service_code]=collated_timetable_outbound.to_dict()
+
+
 
     if collated_timetable_inbound.empty is False:
         # ensuring the vjs times are sorted in ascending order
@@ -590,30 +597,30 @@ def organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
         # ensuring the sequence numbers are sorted in ascending order
         collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(by="Sequence Number",
                                                                                               ascending=True)
+        # add this to a collection of inbound timetable dataframes in a dictionary
+        inbound_timetables[service_code] = collated_timetable_inbound.to_dict()
 
     return collated_timetable_outbound, collated_timetable_inbound
 
 
+#FOR PACKAGE INTEGRATION
+#def search_timetables_data():
+#    """For all timetables xml files, search through and extract the stop level information"""
+#    outbound_timetables = {}
+#    inbound_timetables = {}
+#    for xml_file in stop_level_data:
+#        service_object, stop_object, vehicle_journey, journey_pattern_section_object = create_dataclasses(xml_file)
+#        collated_timetable_outbound, collated_timetable_inbound, journey_pattern_section_index, journey_pattern_index, journey_pattern_list, base_time = initialise_values()
+#        collated_timetable_outbound, collated_timetable_inbound = organise_timetables(collated_timetable_outbound,
+#                                                                                     collated_timetable_inbound)
 
+
+outbound_timetables = {}
+inbound_timetables = {}
 
 service_object,stop_object, vehicle_journey,journey_pattern_section_object=create_dataclasses()
 
 collated_timetable_outbound, collated_timetable_inbound, journey_pattern_section_index, journey_pattern_index,journey_pattern_list, base_time=initialise_values()
 
 collated_timetable_outbound,collated_timetable_inbound=organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
-
-outbound_timetables="Outbound Timetables"
-inbound_timetables="Inbound Timetables"
-
-if not os.path.exists(outbound_timetables) and collated_timetable_outbound.empty is False:
-    os.makedirs(outbound_timetables)
-filename = 'test_outbound.csv'
-filepath = os.path.join(outbound_timetables, filename)
-collated_timetable_outbound.to_csv(filepath, index=False)
-
-if not os.path.exists(inbound_timetables) and collated_timetable_inbound.empty is False:
-    os.makedirs(inbound_timetables)
-filename = 'test_inbound.csv'
-filepath = os.path.join(inbound_timetables, filename)
-collated_timetable_inbound.to_csv(filepath, index=False)
 

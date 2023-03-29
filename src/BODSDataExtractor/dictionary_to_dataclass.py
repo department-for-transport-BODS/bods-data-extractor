@@ -408,7 +408,7 @@ def reformat_times(direction,vj,base_time):
     return direction[f"{vj.VehicleJourneyCode}"]
 
 def add_dataframe_headers(direction,operating_days,JourneyPattern_id,RouteRef,lineref):
-    "Populate headers with information associated to each individual VJ"
+    '''Populate headers with information associated to each individual VJ'''
 
     direction.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
     direction.loc[-2] = ["Journey Pattern ", "->", "->", "->", "->", JourneyPattern_id]
@@ -423,6 +423,8 @@ def add_dataframe_headers(direction,operating_days,JourneyPattern_id,RouteRef,li
 #def generate_timetable():
 
 def create_dataclasses():
+    '''Using the xml file, dataclasses are created for each element'''
+
     with open(r'cham.xml', 'r', encoding='utf-8') as file:
         xml_text = file.read()
         xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
@@ -432,6 +434,7 @@ def create_dataclasses():
         vehicle_journey_json = xml_root['VehicleJourneys']
         journey_pattern_json = xml_root['JourneyPatternSections']
 
+        #Dictionaries converted to dataclasses
         service_object = from_dict(data_class=Service, data=services_json)
         stop_object = from_dict(data_class=StopPoints, data=stops_json)
         vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
@@ -440,6 +443,8 @@ def create_dataclasses():
         return service_object,stop_object,vehicle_journey,journey_pattern_section_object
 
 def initialise_values():
+    '''Initialise values to be used when generating timetables'''
+
 
     # Define a base time to add run times to
     base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
@@ -451,15 +456,20 @@ def initialise_values():
     journey_pattern_index = {key.id: value for value, key in enumerate(service_object.StandardService.JourneyPattern)}
     journey_pattern_section_index = {key.id: value for value, key in enumerate(journey_pattern_section_object.JourneyPatternSection)}
 
+    #Dataframe to store all inbound vjs together
     collated_timetable_inbound= pd.DataFrame()
 
+    # Dataframe to store all outbound vjs together
     collated_timetable_outbound= pd.DataFrame()
 
     return collated_timetable_outbound,collated_timetable_inbound,journey_pattern_section_index,journey_pattern_index,journey_pattern_list,base_time
 
 
-#Iterate through all vehicle journeys in the file
+
 def generate_timetable(collated_timetable_outbound,collated_timetable_inbound):
+    '''Extracts timetable information for a VJ indvidually and adds to a collated dataframe of vjs, split by outbound and inbound'''
+
+    # Iterate through all vehicle journeys in the file
     for vj in vehicle_journey.VehicleJourney:
 
 
@@ -560,16 +570,22 @@ def generate_timetable(collated_timetable_outbound,collated_timetable_inbound):
     return collated_timetable_outbound, collated_timetable_inbound
 
 def organise_timetables(collated_timetable_outbound, collated_timetable_inbound):
+    '''Ordering the timetables correctly'''
+    
     collated_timetable_outbound, collated_timetable_inbound = generate_timetable(collated_timetable_outbound,
                                                                                  collated_timetable_inbound)
 
     if collated_timetable_outbound.empty is False:
+        #ensuring the vjs times are sorted in ascending order
         collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:, ::-1].values
+        # ensuring the sequence numbers are sorted in ascending order
         collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(by="Sequence Number",
                                                                                                 ascending=True)
 
     if collated_timetable_inbound.empty is False:
+        # ensuring the vjs times are sorted in ascending order
         collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:, ::-1].values
+        # ensuring the sequence numbers are sorted in ascending order
         collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(by="Sequence Number",
                                                                                               ascending=True)
 

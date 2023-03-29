@@ -4,6 +4,8 @@ Created on Tue Mar  7 14:36:32 2023
 
 @author: aakram7
 """
+import os.path
+
 import pandas as pd
 from dataclasses import dataclass
 from typing import List, Dict, Optional
@@ -425,7 +427,7 @@ def add_dataframe_headers(direction,operating_days,JourneyPattern_id,RouteRef,li
 def create_dataclasses():
     '''Using the xml file, dataclasses are created for each element'''
 
-    with open(r'cham.xml', 'r', encoding='utf-8') as file:
+    with open(r'anea.xml', 'r', encoding='utf-8') as file:
         xml_text = file.read()
         xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
         xml_root = xml_json['TransXChange']
@@ -571,7 +573,7 @@ def generate_timetable(collated_timetable_outbound,collated_timetable_inbound):
 
 def organise_timetables(collated_timetable_outbound, collated_timetable_inbound):
     '''Ordering the timetables correctly'''
-    
+
     collated_timetable_outbound, collated_timetable_inbound = generate_timetable(collated_timetable_outbound,
                                                                                  collated_timetable_inbound)
 
@@ -592,8 +594,26 @@ def organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
     return collated_timetable_outbound, collated_timetable_inbound
 
 
+
+
 service_object,stop_object, vehicle_journey,journey_pattern_section_object=create_dataclasses()
 
 collated_timetable_outbound, collated_timetable_inbound, journey_pattern_section_index, journey_pattern_index,journey_pattern_list, base_time=initialise_values()
 
 collated_timetable_outbound,collated_timetable_inbound=organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
+
+outbound_timetables="Outbound Timetables"
+inbound_timetables="Inbound Timetables"
+
+if not os.path.exists(outbound_timetables) and collated_timetable_outbound.empty is False:
+    os.makedirs(outbound_timetables)
+filename = 'test_outbound.csv'
+filepath = os.path.join(outbound_timetables, filename)
+collated_timetable_outbound.to_csv(filepath, index=False)
+
+if not os.path.exists(inbound_timetables) and collated_timetable_inbound.empty is False:
+    os.makedirs(inbound_timetables)
+filename = 'test_inbound.csv'
+filepath = os.path.join(inbound_timetables, filename)
+collated_timetable_inbound.to_csv(filepath, index=False)
+

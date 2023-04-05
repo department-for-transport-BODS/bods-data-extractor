@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar  7 14:36:32 2023
-
 @author: aakram7
 """
 import os.path
@@ -204,7 +203,8 @@ class Line:
 
 @dataclass
 class Lines:
-    Line: Line
+    Line: Optional[Line]
+    #Line: Optional[List[Line]]
 
 
 @dataclass
@@ -629,4 +629,3 @@ service_object,stop_object, vehicle_journey,journey_pattern_section_object=creat
 journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index = map_indicies()
 
 collated_timetable_outbound,collated_timetable_inbound = organise_timetables()
-

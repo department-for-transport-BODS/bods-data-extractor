@@ -11,6 +11,7 @@ from typing import List, Dict, Optional
 from dacite import from_dict
 import xmltodict
 import datetime
+from dacite import Config
 
 # set default value to null in optional values
 
@@ -203,10 +204,8 @@ class Line:
 
 @dataclass
 class Lines:
-    Line: Optional[Line]
-    #Line: Optional[List[Line]]
-
-
+    config = Config( type_hooks={ List[Line]: lambda l: [l] if isinstance(l, Line) else l, } )
+    
 @dataclass
 class Service:
     ServiceCode: str
@@ -432,7 +431,7 @@ def add_dataframe_headers(direction, operating_days, JourneyPattern_id, RouteRef
 def create_dataclasses():
     """Using the xml file, dataclasses are created for each element"""
 
-    with open(r'cham.xml', 'r', encoding='utf-8') as file:
+    with open(r'1b.xml', 'r', encoding='utf-8') as file:
         xml_text = file.read()
         xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
         xml_root = xml_json['TransXChange']
@@ -440,9 +439,12 @@ def create_dataclasses():
         stops_json = xml_root["StopPoints"]
         vehicle_journey_json = xml_root['VehicleJourneys']
         journey_pattern_json = xml_root['JourneyPatternSections']
+        
+        
+        config = Config( type_hooks={ List[Line]: lambda l: [l] if isinstance(l, Line) else l, } )
 
         #Dictionaries converted to dataclasses
-        service_object = from_dict(data_class=Service, data=services_json)
+        service_object = from_dict(data_class=Service, data=services_json,config=config)
         stop_object = from_dict(data_class=StopPoints, data=stops_json)
         vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
         journey_pattern_section_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)

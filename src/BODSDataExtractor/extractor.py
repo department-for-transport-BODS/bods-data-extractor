@@ -499,6 +499,8 @@ class TimetableExtractor:
             stops_json = xml_json['TransXChange']['StopPoints']
             xml_output.append(stops_json)
             
+            self.outbound_timetables = {}
+            self.inbound_timetables = {}
             self.service_object, self.stop_object, self.vehicle_journey, self.journey_pattern_section_object = self.create_dataclasses(xml_text)
             self.journey_pattern_section_index, self.journey_pattern_index, self.journey_pattern_list, self.stop_point_index = self.map_indicies()
             self.collated_timetable_outbound, self.collated_timetable_inbound = self.organise_timetables()
@@ -1930,7 +1932,7 @@ class TimetableExtractor:
         return operating_days
     
     
-    def extract_runtimes(vj, journey_pattern_timing_link):
+    def extract_runtimes(self,vj, journey_pattern_timing_link):
     
         """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be checked"""
     
@@ -2633,4 +2635,3 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
-

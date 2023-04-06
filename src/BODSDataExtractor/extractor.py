@@ -1872,7 +1872,7 @@ class TimetableExtractor:
         return service_atco_mi
     
     
-    def extract_timetable_operating_days(days):
+    def extract_timetable_operating_days(self,days):
         ''' Ensuring the operating days are ordered appropriately '''
     
         operating_day_list = list(days)
@@ -2007,7 +2007,7 @@ class TimetableExtractor:
             return to_sequence
     
     
-    def collate_vjs(direction_df, collated_timetable):
+    def collate_vjs(self,direction_df, collated_timetable):
         """Combines all vehicle journeys together for inbound or outbound"""
     
         if direction_df.empty:
@@ -2028,7 +2028,7 @@ class TimetableExtractor:
         return collated_timetable
     
     
-    def reformat_times(timetable, vj, base_time):
+    def reformat_times(self,timetable, vj, base_time):
         '''Turns the time deltas into time of day, final column is formatted as string'''
     
         timetable[f"{vj.VehicleJourneyCode}"] = timetable[f"{vj.VehicleJourneyCode}"].cumsum()
@@ -2038,7 +2038,7 @@ class TimetableExtractor:
         return timetable[f"{vj.VehicleJourneyCode}"]
     
     
-    def add_dataframe_headers(direction, operating_days, JourneyPattern_id, RouteRef, lineref):
+    def add_dataframe_headers(self,direction, operating_days, JourneyPattern_id, RouteRef, lineref):
         """Populate headers with information associated to each individual VJ"""
     
         direction.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]

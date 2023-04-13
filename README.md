@@ -305,7 +305,7 @@ As well as specifying the granularity of data to extract (dataset, service line 
 - search -  _accepts string input of key-words to filter for the data set name, data set description, organisation name, or admin name e.g. 'Arriva'_
 - bods_compliant - _accepts boolean input (True or False), where True filters for only BODS Compliant datasets. Default value is True_
 - atco_code - _accepts list input of the first three characters of ATCO codes (ATCO codes are unique identifiers of UK bus stops, where first three characters signify the admin area they are within). This filters datasets and/or service lines that have stops within the specified admin areas. e.g. ['320','450']_
-- limit - _accepts an integer value which specifies the amount of files that will be downloaded, associated to a specfic dataset. For example, if there were 5 files present for a specific dataset and the limit was set to 5, all files would be dowloaded. Comparitively, if the limit was set to 1 for the specific dataset, only 1 file of the 5 will be downloaded and analysed._
+- limit - _accepts an integer value which specifies the amount of datasets will be downloaded. For example, if there were 5 datasets present and the limit was set to 5, all datasets would be dowloaded. Comparitively, if the limit was set to 1 , only 1 dataset of the 5 will be downloaded and analysed._
 
 Example of this:
 ```python

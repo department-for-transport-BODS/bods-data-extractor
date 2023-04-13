@@ -960,20 +960,11 @@ class TimetableExtractor:
         return self.timetable_dict
 
 
-    def get_user_downloads_folder(self):
-        '''
-        Specify where the output of stop level is saved, within the project folder or in the downloads folder
-        '''
-        
-        question = "Enter 'Y' to save to project folder or 'N' to save to downloads folder: "
-        
-        choice = input(question)
-        while choice not in ['y', 'Y', 'n', 'N']:
-            print('Invalid choice')
-            choice = input(question)
+    def get_user_downloads_folder(self, in_downloads_folder):
         
         
-        if choice =="N" or choice=="n":
+        
+        if in_downloads_folder:
             
             downloads_folder = str(os.path.join(Path.home(), "Downloads"))
             
@@ -987,12 +978,12 @@ class TimetableExtractor:
                 print("Unrecognised OS, cannot locate downloads folder")
                 downloads_folder = ""
             
-        elif choice is choice=="y" or choice=="Y":
+        elif not in_downloads_folder:
             
             downloads_folder=str(os.path.dirname(os.path.abspath(__file__)))+"\Output"
             
             if os.path.exists(downloads_folder):
-                print("Adding to Output Folder...")
+                print("Adding to output Folder...")
             
             elif not os.path.exists(downloads_folder):
                 os.makedirs('output')
@@ -1002,12 +993,12 @@ class TimetableExtractor:
 
         return downloads_folder
 
-    def create_today_folder(self):
+    def create_today_folder(self, in_downloads_folder):
         '''
         Create a folder, named with the days data, so that timetables can be saved locally
         '''
         today = str(date.today())
-        downloads_folder = TimetableExtractor.get_user_downloads_folder(self)
+        downloads_folder = TimetableExtractor.get_user_downloads_folder(self, in_downloads_folder)
 
         # list out the file names in the downloads folder
         files = os.listdir(downloads_folder)
@@ -1077,14 +1068,14 @@ class TimetableExtractor:
         destination = TimetableExtractor.create_today_folder(self)
         self.service_line_extract.to_csv(f'{destination}/service_line_extract.csv', index=False)
 
-    def save_all_timetables_to_csv(self):
+    def save_all_timetables_to_csv(self, in_downloads_folder=True):
 
         '''
         Save all timetables from the timetable_dict attribute as local csv files.
         '''
 
         #create folder to save timetables int and get name of new folder
-        destination = TimetableExtractor.create_today_folder(self)
+        destination = TimetableExtractor.create_today_folder(self, in_downloads_folder)
 
         for k,v in self.timetable_dict.items():
             print (f'writing {k} to csv...')
@@ -1093,7 +1084,8 @@ class TimetableExtractor:
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
 
 
-    def save_filtered_timetables_to_csv(self, service_code):
+    def save_filtered_timetables_to_csv(self, service_code, in_downloads_folder):
+        #downloads folder True or false 
 
         '''
         Save a filtered subset of timetables from the timetable_dict attribute as local csv files.
@@ -1104,7 +1096,7 @@ class TimetableExtractor:
         '''
 
         #create folder to save timetables int and get name of new folder
-        destination = TimetableExtractor.create_today_folder(self)
+        destination = TimetableExtractor.create_today_folder(self, in_downloads_folder)
 
 
         filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)

@@ -963,37 +963,37 @@ class TimetableExtractor:
     def get_user_downloads_folder(self):
         
         question = "Enter 'Y' to save to project folder or 'N' to save to downloads folder: "
-
+        
         choice = input(question)
         while choice not in ['y', 'Y', 'n', 'N']:
             print('Invalid choice')
             choice = input(question)
-
-
+        
+        
         if choice =="N" or choice=="n":
-
+            
             downloads_folder = str(os.path.join(Path.home(), "Downloads"))
-
+            
             if os.path.exists(downloads_folder):
                 print("Downloads Folder Located")
-
+            
             elif not os.path.exists(downloads_folder):
                 downloads_folder = str(Path.home() / "Downloads")
-
+                
             else:
                 print("Unrecognised OS, cannot locate downloads folder")
                 downloads_folder = ""
-
+            
         elif choice is choice=="y" or choice=="Y":
-
+            
             downloads_folder=str(os.path.dirname(os.path.abspath(__file__)))+"\Output"
-
+            
             if os.path.exists(downloads_folder):
                 print("Adding to Output Folder...")
-
+            
             elif not os.path.exists(downloads_folder):
                 os.makedirs('output')
-
+                
             else:
                 print("Uknown Error")
 

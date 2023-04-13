@@ -961,6 +961,9 @@ class TimetableExtractor:
 
 
     def get_user_downloads_folder(self):
+        '''
+        Specify where the output of stop level is saved, within the project folder or in the downloads folder
+        '''
         
         question = "Enter 'Y' to save to project folder or 'N' to save to downloads folder: "
         

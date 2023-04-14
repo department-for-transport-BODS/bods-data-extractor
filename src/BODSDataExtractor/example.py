@@ -16,7 +16,7 @@ import extractor
 import os
 
 #retrieve api key from environment variables
-api = os.environ.get('API')
+api = os.environ.get('api_key')
 
 
 #-------------------------------------------

@@ -958,11 +958,24 @@ class TimetableExtractor:
 
         print('Timetable generated!')
         return self.timetable_dict
+    
+    
+    def add_to_output_folder(self):
+        downloads_folder=str(os.path.dirname(os.path.abspath(__file__)))+"\Output"
+        
+        if os.path.exists(downloads_folder):
+            print("Adding to output Folder...")
+        
+        elif not os.path.exists(downloads_folder):
+            os.makedirs('output')
+            
+        else:
+            print("Uknown Error")
+            
+        return downloads_folder
 
 
     def get_user_downloads_folder(self, in_downloads_folder):
-        
-        
         
         if in_downloads_folder:
             
@@ -975,23 +988,14 @@ class TimetableExtractor:
                 downloads_folder = str(Path.home() / "Downloads")
                 
             else:
-                print("Unrecognised OS, cannot locate downloads folder")
-                downloads_folder = ""
+                print("Unrecognised OS, cannot locate downloads folder, saving to project folder")
+                downloads_folder=TimetableExtractor.add_to_output_folder(self)
             
         elif not in_downloads_folder:
-            
-            downloads_folder=str(os.path.dirname(os.path.abspath(__file__)))+"\Output"
-            
-            if os.path.exists(downloads_folder):
-                print("Adding to output Folder...")
-            
-            elif not os.path.exists(downloads_folder):
-                os.makedirs('output')
-                
-            else:
-                print("Uknown Error")
-
+            downloads_folder=TimetableExtractor.add_to_output_folder(self)
+        
         return downloads_folder
+
 
     def create_today_folder(self, in_downloads_folder):
         '''
@@ -1056,7 +1060,7 @@ class TimetableExtractor:
         metadata['localities'] = metadata['localities'].apply(lambda x: x[0:400])
 
         
-        destination = TimetableExtractor.create_today_folder(self)
+        destination = TimetableExtractor.create_today_folder(self, bool)
         metadata.to_csv(f'{destination}/metadata.csv', index=False)
 
 
@@ -1065,17 +1069,17 @@ class TimetableExtractor:
         Save service line table to csv file
         """
 
-        destination = TimetableExtractor.create_today_folder(self)
+        destination = TimetableExtractor.create_today_folder(self, bool)
         self.service_line_extract.to_csv(f'{destination}/service_line_extract.csv', index=False)
 
-    def save_all_timetables_to_csv(self, in_downloads_folder=True):
+    def save_all_timetables_to_csv(self, in_downloads_folder):
 
         '''
         Save all timetables from the timetable_dict attribute as local csv files.
         '''
 
         #create folder to save timetables int and get name of new folder
-        destination = TimetableExtractor.create_today_folder(self, in_downloads_folder)
+        destination = TimetableExtractor.create_today_folder(self,in_downloads_folder )
 
         for k,v in self.timetable_dict.items():
             print (f'writing {k} to csv...')
@@ -1084,8 +1088,7 @@ class TimetableExtractor:
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
 
 
-    def save_filtered_timetables_to_csv(self, service_code, in_downloads_folder):
-        #downloads folder True or false 
+    def save_filtered_timetables_to_csv(self, service_code):
 
         '''
         Save a filtered subset of timetables from the timetable_dict attribute as local csv files.
@@ -1096,7 +1099,7 @@ class TimetableExtractor:
         '''
 
         #create folder to save timetables int and get name of new folder
-        destination = TimetableExtractor.create_today_folder(self, in_downloads_folder)
+        destination = TimetableExtractor.create_today_folder(self,bool)
 
 
         filtered_dict = TimetableExtractor.filter_timetable_dict(self, service_code)

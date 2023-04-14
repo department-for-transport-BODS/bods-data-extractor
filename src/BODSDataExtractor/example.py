@@ -35,13 +35,13 @@ my_bus_data_object = extractor.TimetableExtractor(api_key=api
 #save the extracted dataset level data to filtered_dataset_level variable
 filtered_dataset_level = my_bus_data_object.metadata
 
-#save the extracted dataset level data to lcoal csv file
+#save the extracted dataset level data to local csv file
 my_bus_data_object.save_metadata_to_csv()
 
 #save the extracted service line level data to dataset_level variable
 filtered_service_line_level = my_bus_data_object.service_line_extract
 
-#save the extracted service line level data to lcoal csv file
+#save the extracted service line level data to local csv file
 my_bus_data_object.save_service_line_extract_to_csv()
 
 #save the extracted stop level data to stop_level variable

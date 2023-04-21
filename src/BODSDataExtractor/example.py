@@ -15,7 +15,7 @@ except:
 import os
 
 #retrieve api key from environment variables
-api = os.environ.get('api_key')
+api = os.environ.get('BODS_API_KEY')
 
 #-------------------------------------------
 #            FINE TUNED RESULTS
@@ -25,7 +25,7 @@ api = os.environ.get('api_key')
 my_bus_data_object = TimetableExtractor(api_key=api
                                  ,status = 'published' 
                                  ,service_line_level=True 
-                                 ,stop_level=True 
+                                 ,stop_level=True
                                  ,nocs=['BPTR','RBTS']
                                  ,bods_compliant=True
                                  )

@@ -1,250 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar  7 14:36:32 2023
-@author: aakram7
-"""
-import os.path
-
 import pandas as pd
-from dataclasses import dataclass
-from typing import List, Dict, Optional
 from dacite import from_dict
 import xmltodict
 import datetime
-from dacite import Config
-
-# set default value to null in optional values
-
-
-@dataclass
-class Route:
-    id: str
-    description: str
-    route_section_ref: str
-
-
-@dataclass
-class RouteSection:
-    id: str
-    route_link_id: str
-    from_stop_point_ref: str
-    to_stop_point_ref: str
-
-
-@dataclass
-class Location:
-    Longitude: str
-    Latitude: str
-
-
-@dataclass
-class AnnotatedStopPointRef:
-    StopPointRef: str
-    CommonName: str
-    Location: Optional[Location]
-
-
-@dataclass
-class StopPoints:
-    AnnotatedStopPointRef: List[AnnotatedStopPointRef]
-
-
-@dataclass
-class TicketMachine:
-    JourneyCode: str
-
-
-@dataclass
-class Operational:
-    TicketMachine: TicketMachine
-
-
-@dataclass
-class OutboundDescription:
-    Description: str
-    Origin: Optional[str]
-    Destination: Optional[str]
-
-
-@dataclass
-class InboundDescription:
-    Description: str
-
-
-@dataclass
-class OperatingPeriod:
-    StartDate: str
-
-
-@dataclass
-class RegularDayType:
-    DaysOfWeek: Dict
-
-
-@dataclass
-class WorkingDays:
-    ServicedOrganisationRef: Optional[str]
-
-
-@dataclass
-class ServicedOrganisationDayType:
-    DaysOfOperation: WorkingDays
-
-
-@dataclass
-class BankHolidayOperation:
-    DaysOfNonOperation: Dict
-    DaysOfOperation: Optional[Dict]
-
-
-@dataclass
-class From:
-    Activity: Optional[str]
-    StopPointRef: Optional[str]
-    TimingStatus: Optional[str]
-    _SequenceNumber: Optional[str]
-
-    @property
-    def sequence_number(self):
-        return self._SequenceNumber
-
-
-
-@dataclass
-class To:
-    StopPointRef: Optional[str]
-    TimingStatus: Optional[str]
-    _SequenceNumber: Optional[str]
-
-    @property
-    def sequence_number(self):
-        return self._SequenceNumber
-
-
-@dataclass
-class OperatingProfile:
-    RegularDayType: RegularDayType
-    BankHolidayOperation: BankHolidayOperation
-    PublicUse: Optional[str]
-    DaysOfNonOperation: Optional[Dict]
-    RegisteredOperatorRef: Optional[str]
-    ServicedOrganisationDayType: Optional[ServicedOrganisationDayType]
-
-
-@dataclass
-class VehicleJourneyTimingLink:
-    DutyCrewCode: Optional[str]
-    JourneyPatternTimingLinkRef: Optional[str]
-    RunTime: Optional[str]
-    From: From
-    To: To
-
-
-
-
-@dataclass
-class VehicleJourneyTimingLinks:
-
-    VehicleJourneyTimingLink: list[VehicleJourneyTimingLink]
-
-
-@dataclass
-class VehicleJourney:
-    OperatorRef: str
-    Operational: Optional[Operational]
-    VehicleJourneyCode: str
-    ServiceRef: str
-    LineRef: str
-    JourneyPatternRef: str
-    DepartureTime: str
-    OperatingProfile: Optional[OperatingProfile]
-    DepartureDayShift: Optional[str]
-    VehicleJourneyTimingLink: Optional[list[VehicleJourneyTimingLink]]
-
-
-@dataclass
-class VehicleJourneys:
-    VehicleJourney: List[VehicleJourney]
-
-
-@dataclass
-class JourneyPattern:
-    DestinationDisplay: str
-    OperatorRef: str
-    Direction: str
-    RouteRef: str
-    JourneyPatternSectionRefs: str
-    _id: Optional[str]
-
-    @property
-    def id(self):
-        return self._id
-
-
-@dataclass
-class StandardService:
-    Origin: str
-    Destination: str
-    UseAllPoints: Optional[str]
-    JourneyPattern: List[JourneyPattern]
-
-
-@dataclass
-class Line:
-    _id: Optional[str]
-    LineName: str
-    OutboundDescription: OutboundDescription
-    InboundDescription: Optional[InboundDescription]
-
-    @property
-    def id(self):
-        return self._id
-
-
-
-@dataclass
-class Lines:
-    config = Config( type_hooks={ List[Line]: lambda l: [l] if isinstance(l, Line) else l, } )
-    
-@dataclass
-class Service:
-    ServiceCode: str
-    Lines: Lines
-    OperatingPeriod: OperatingPeriod
-    OperatingProfile: Optional[OperatingProfile]
-    TicketMachineServiceCode: Optional[str]
-    RegisteredOperatorRef: str
-    PublicUse: str
-    StandardService: StandardService
-
-
-
-@dataclass
-class JourneyPatternTimingLink:
-    _id: str
-    From: From
-    To: To
-    RouteLinkRef: str
-    RunTime: str
-
-    @property
-    def id(self):
-        return self._id
-
-
-@dataclass
-class JourneyPatternSection:
-    _id: str
-    JourneyPatternTimingLink: List[JourneyPatternTimingLink]
-
-    @property
-    def id(self):
-        return self._id
-
-
-@dataclass
-class JourneyPatternSections:
-    JourneyPatternSection: List[JourneyPatternSection]
+from classes import *
 
 
 def extract_timetable_operating_days(days):
@@ -295,7 +53,7 @@ def extract_timetable_operating_days(days):
         operating_days = sortit[0][0]
 
         # if the operating days are not consecutive, they're seperated by commas
-    elif consecutive == False:
+    elif not consecutive:
         for i in range(length):
             operating_days = operating_days + sortit[i][0] + ","
 
@@ -307,7 +65,7 @@ def extract_timetable_operating_days(days):
     return operating_days
 
 
-def extract_runtimes(vj, journey_pattern_timing_link):
+def extract_runtimes(vj, journey_pattern_timing_link, vjtl_index):
 
     """Extract the runtimes from timing links as a string. If JPTL run time is 0, VJTL will be checked"""
 
@@ -315,25 +73,15 @@ def extract_runtimes(vj, journey_pattern_timing_link):
     runtime = journey_pattern_timing_link.RunTime
 
     # if jptl runtime is 0, find equivalent vehicle journey pattern timing link run time
-    if runtime == 'PT0M0S':
+    if pd.Timedelta(runtime).value == 0:
 
         if vj.VehicleJourneyTimingLink is not None:
 
-            for vjtl in vj.VehicleJourneyTimingLink:
+            runtime = vj.VehicleJourneyTimingLink[vjtl_index[journey_pattern_timing_link.id]].RunTime
 
-                if journey_pattern_timing_link.id == vjtl.JourneyPatternTimingLinkRef:
-                    runtime = vjtl.RunTime
+            return runtime
 
-                    return runtime
-
-                else:
-                    pass
-
-        else:
-            print(f"VJ timing link Not Present: {journey_pattern_timing_link}")
-
-    else:
-        return runtime
+    return runtime
 
 
 def extract_common_name(StopPointRef):
@@ -353,10 +101,10 @@ def extract_common_name(StopPointRef):
     return stop_common_name, stop_lat, stop_long
 
 
-def next_jptl_in_sequence(jptl, vj_departure_time, vj, first_jptl=False):
+def next_jptl_in_sequence(jptl, vj_departure_time, vj, vjtl_index, first_jptl=False):
     """Returns the sequence number, stop point ref and time for a JPTL to be added to a outboud or inbound df"""
 
-    runtime = extract_runtimes(vj, jptl)
+    runtime = extract_runtimes(vj, jptl, vjtl_index)
     common_name, latitude, longitude = extract_common_name(str(jptl.To.StopPointRef))
 
     to_sequence = [int(jptl.To.sequence_number),
@@ -412,7 +160,6 @@ def reformat_times(timetable, vj, base_time):
 
     return timetable[f"{vj.VehicleJourneyCode}"]
 
-
 def add_dataframe_headers(direction, operating_days, JourneyPattern_id, RouteRef, lineref):
     """Populate headers with information associated to each individual VJ"""
 
@@ -425,13 +172,10 @@ def add_dataframe_headers(direction, operating_days, JourneyPattern_id, RouteRef
 
     return direction
 
-
-#def generate_timetable():
-
 def create_dataclasses():
     """Using the xml file, dataclasses are created for each element"""
 
-    with open(r'1b.xml', 'r', encoding='utf-8') as file:
+    with open(r'timetables/57.xml', 'r', encoding='utf-8') as file:
         xml_text = file.read()
         xml_json = xmltodict.parse(xml_text, process_namespaces=False, attr_prefix='_')
         xml_root = xml_json['TransXChange']
@@ -439,12 +183,21 @@ def create_dataclasses():
         stops_json = xml_root["StopPoints"]
         vehicle_journey_json = xml_root['VehicleJourneys']
         journey_pattern_json = xml_root['JourneyPatternSections']
-        
-        
-        config = Config( type_hooks={ List[Line]: lambda l: [l] if isinstance(l, Line) else l, } )
+
+        if isinstance(services_json['Lines']['Line'], dict):
+            services_json['Lines']['Line'] = [services_json['Lines']['Line']]
+
+        if isinstance(journey_pattern_json['JourneyPatternSection'], dict):
+            journey_pattern_json['JourneyPatternSection'] = [journey_pattern_json['JourneyPatternSection']]
+
+        if isinstance(services_json['StandardService']['JourneyPattern'], dict):
+            services_json['StandardService']['JourneyPattern'] = [services_json['StandardService']['JourneyPattern']]
+
+        if isinstance(vehicle_journey_json['VehicleJourney'], dict):
+            vehicle_journey_json['VehicleJourney'] = [vehicle_journey_json['VehicleJourney']]
 
         #Dictionaries converted to dataclasses
-        service_object = from_dict(data_class=Service, data=services_json,config=config)
+        service_object = from_dict(data_class=Service, data=services_json)
         stop_object = from_dict(data_class=StopPoints, data=stops_json)
         vehicle_journey = from_dict(data_class=VehicleJourneys, data=vehicle_journey_json)
         journey_pattern_section_object = from_dict(data_class=JourneyPatternSections, data=journey_pattern_json)
@@ -467,6 +220,37 @@ def map_indicies():
 
     return journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index
 
+
+def organise_timetables(collated_timetable_outbound, collated_timetable_inbound):
+    """Ordering the timetables correctly"""
+
+    service_code = str(service_object.ServiceCode)
+
+    if not collated_timetable_outbound.empty:
+
+        # ensuring the vjs times are sorted in ascending order
+        collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:, ::-1].values
+
+        # ensuring the sequence numbers are sorted in ascending order
+        collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(by="Sequence Number",
+                                                                                                ascending=True)
+
+        # add this to a collection of outbound timetable dataframes in a dictionary
+        outbound_timetables[service_code] = collated_timetable_outbound.to_dict()
+
+    if not collated_timetable_inbound.empty:
+
+        # ensuring the vjs times are sorted in ascending order
+        collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:, ::-1].values
+
+        # ensuring the sequence numbers are sorted in ascending order
+        collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(by="Sequence Number",
+                                                                                              ascending=True)
+
+        # add this to a collection of inbound timetable dataframes in a dictionary
+        inbound_timetables[service_code] = collated_timetable_inbound.to_dict()
+
+    return collated_timetable_outbound, collated_timetable_inbound
 
 def generate_timetable():
 
@@ -495,27 +279,44 @@ def generate_timetable():
         # init empty timetable for inbound Vehicle journey
         inbound = pd.DataFrame(columns=vj_columns)
 
-        # Create vars for relevant indices of this vehicle journey
-        vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
-        vehicle_journey_jps_index = journey_pattern_section_index[journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
-
         if vj.LineRef[-1] == ":":
             lineref = vj.LineRef.split(':')[-2]
         else:
             lineref = vj.LineRef.split(':')[-1]
 
+        vjtl_index = {}
+
+        if vj.VehicleJourneyTimingLink is not None:
+            vjtl_index = {key.JourneyPatternTimingLinkRef: value for value, key in enumerate(vj.VehicleJourneyTimingLink)}
+
+        # Create vars for relevant indices of this vehicle journey
+        vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
+
         direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
-
         RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
-
         JourneyPattern_id = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].id
+
+        # Get the journey pattern sections for this vehicle journey, can be a single string or a list of strings
+        vehicle_journey_jps_list = service_object.StandardService.JourneyPattern[journey_pattern_index[vj.JourneyPatternRef]].JourneyPatternSectionRefs
+
+        # If there are multiple JPS, put them into a single list for later
+        if isinstance(vehicle_journey_jps_list, list):
+            vehicle_journey_jps_index = [journey_pattern_section_index[jpsr] for jpsr in journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
+            all_jptl = [[jptl for jptl in journey_pattern_section_object.JourneyPatternSection[x].JourneyPatternTimingLink] for x in vehicle_journey_jps_index]
+            flat_jptl = [jptl for sublist in all_jptl for jptl in sublist]
+
+        # if just one JPS, find the journey pattern section directly for later
+        else:
+            vehicle_journey_jps_index = journey_pattern_section_index[vehicle_journey_jps_list]
+            flat_jptl = journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink
+
 
         # Mark the first JPTL
         first = True
 
         # Loop through relevant timing links
 
-        for JourneyPatternTimingLink in journey_pattern_section_object.JourneyPatternSection[vehicle_journey_jps_index].JourneyPatternTimingLink:
+        for JourneyPatternTimingLink in flat_jptl:
 
             # first JPTL should use 'From' AND 'To' stop data
             if first:
@@ -526,6 +327,7 @@ def generate_timetable():
                 timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink,
                                                            departure_time,
                                                            vj,
+                                                           vjtl_index,
                                                            first_jptl=True)
 
                 # Add first sequence, stop ref and departure time
@@ -544,7 +346,7 @@ def generate_timetable():
                     print(f'Unknown Direction: {direction}')
 
             else:
-                timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time,vj)
+                timetable_sequence = next_jptl_in_sequence(JourneyPatternTimingLink, departure_time,vj, vjtl_index)
 
                 if direction == 'outbound':
                     outbound.loc[len(outbound)] = timetable_sequence
@@ -558,7 +360,10 @@ def generate_timetable():
         else:
             days = vj.OperatingProfile.RegularDayType.DaysOfWeek
 
-        operating_days = extract_timetable_operating_days(days)
+        try:
+            operating_days = extract_timetable_operating_days(days)
+        except TypeError:
+            operating_days = "N/A"
 
         if not outbound.empty:
             outbound[f"{vj.VehicleJourneyCode}"] = reformat_times(outbound, vj, base_time)
@@ -574,53 +379,9 @@ def generate_timetable():
         # collect vj information together for inbound
         collated_timetable_inbound = collate_vjs(inbound, collated_timetable_inbound)
 
-    return collated_timetable_outbound, collated_timetable_inbound
-
-
-def organise_timetables():
-    """Ordering the timetables correctly"""
-
-    service_code = str(service_object.ServiceCode)
-
-    collated_timetable_outbound, collated_timetable_inbound = generate_timetable()
-
-    if not collated_timetable_outbound.empty:
-
-        # ensuring the vjs times are sorted in ascending order
-        collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:, ::-1].values
-
-        # ensuring the sequence numbers are sorted in ascending order
-        collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(by="Sequence Number",
-                                                                                                ascending=True)
-
-        # add this to a collection of outbound timetable dataframes in a dictionary
-        outbound_timetables[service_code] = collated_timetable_outbound.to_dict()
-
-    if not collated_timetable_inbound.empty:
-
-        # ensuring the vjs times are sorted in ascending order
-        collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:, ::-1].values
-
-        # ensuring the sequence numbers are sorted in ascending order
-        collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(by="Sequence Number",
-                                                                                              ascending=True)
-
-        # add this to a collection of inbound timetable dataframes in a dictionary
-        inbound_timetables[service_code] = collated_timetable_inbound.to_dict()
+    collated_timetable_outbound, collated_timetable_inbound = organise_timetables(collated_timetable_outbound, collated_timetable_inbound)
 
     return collated_timetable_outbound, collated_timetable_inbound
-
-
-#FOR PACKAGE INTEGRATION
-def search_timetables_data():
-    """For all timetables xml files, search through and extract the stop level information"""
-    outbound_timetables = {}
-    inbound_timetables = {}
-    for xml_file in stop_level_data:
-        service_object, stop_object, vehicle_journey, journey_pattern_section_object = create_dataclasses(xml_file)
-        collated_timetable_outbound, collated_timetable_inbound, journey_pattern_section_index, journey_pattern_index, journey_pattern_list, base_time = map_indicies()
-        collated_timetable_outbound, collated_timetable_inbound = organise_timetables(collated_timetable_outbound,
-                                                                                     collated_timetable_inbound)
 
 
 outbound_timetables = {}
@@ -630,4 +391,4 @@ service_object,stop_object, vehicle_journey,journey_pattern_section_object=creat
 
 journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index = map_indicies()
 
-collated_timetable_outbound,collated_timetable_inbound = organise_timetables()
+collated_timetable_outbound, collated_timetable_inbound = generate_timetable()

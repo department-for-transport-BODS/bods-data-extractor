@@ -360,10 +360,10 @@ def generate_timetable():
         else:
             days = vj.OperatingProfile.RegularDayType.DaysOfWeek
 
-        try:
+        if days is None and (service_object.OperatingProfile.BankHolidayOperation.DaysOfOperation is not None or vj.OperatingProfile.BankHolidayOperation.DaysOfOperation is not None):
+            operating_days="Holidays Only"
+        else:
             operating_days = extract_timetable_operating_days(days)
-        except TypeError:
-            operating_days = "N/A"
 
         if not outbound.empty:
             outbound[f"{vj.VehicleJourneyCode}"] = reformat_times(outbound, vj, base_time)

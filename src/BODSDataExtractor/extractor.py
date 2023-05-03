@@ -1847,19 +1847,7 @@ class TimetableExtractor:
     
         return self.journey_pattern_section_index, self.journey_pattern_index, self.journey_pattern_list, self.stop_point_index
 
-    def generate_timetable_stop(self):
-    
-        """Extracts timetable information for a VJ individually and
-        adds to a collated dataframe of vjs, split by outbound and inbound"""
-    
-        # Define a base time to add run times to
-        base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
-    
-        #Dataframe to store all inbound vjs together
-        self.collated_timetable_inbound = pd.DataFrame()
-    
-        # Dataframe to store all outbound vjs together
-        self.collated_timetable_outbound = pd.DataFrame()
+    def create_txc_objects(self):
 
         self.timetable_service_extract = self.service_line_extract_with_stop_level_json.copy(deep=True)
 
@@ -1874,6 +1862,22 @@ class TimetableExtractor:
 
         self.timetable_service_extract['stop_objects'] = self.timetable_service_extract[
             'stops_json'].apply(self.create_stop_object)
+
+    def generate_timetable_stop(self):
+    
+        """Extracts timetable information for a VJ individually and
+        adds to a collated dataframe of vjs, split by outbound and inbound"""
+    
+        # Define a base time to add run times to
+        base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
+    
+        #Dataframe to store all inbound vjs together
+        self.collated_timetable_inbound = pd.DataFrame()
+    
+        # Dataframe to store all outbound vjs together
+        self.collated_timetable_outbound = pd.DataFrame()
+
+        self.create_txc_objects()
 
         # Iterate through all vehicle journeys in the file
         for vj in self.vehicle_journey.VehicleJourney:
@@ -2424,4 +2428,23 @@ class xmlDataExtractor:
         unique_atco_first_3_letters = list(set(atco_first_3_letters))
         
         return unique_atco_first_3_letters
+
+
+import os
+
+#retrieve api key from environment variables
+api = os.environ.get('BODS_API_KEY')
+
+#-------------------------------------------
+#            FINE TUNED RESULTS
+#-------------------------------------------
+#intiate an object instance called my_bus_data_object with desired parameters
+
+bus = TimetableExtractor(api_key=api
+                                 ,status = 'published'
+                                 ,service_line_level=True
+                                 ,stop_level=True
+                                 ,nocs=['RBTS']
+                                 ,bods_compliant=True
+                                 )
 

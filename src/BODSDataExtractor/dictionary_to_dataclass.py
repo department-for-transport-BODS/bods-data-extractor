@@ -252,25 +252,14 @@ def organise_timetables(service_object,collated_timetable_outbound, collated_tim
 
     return collated_timetable_outbound, collated_timetable_inbound
 
-def generate_timetable():
 
-    """Extracts timetable information for a VJ indvidually and
-    adds to a collated dataframe of vjs, split by outbound and inbound"""
 
-    service_object, stop_object, vehicle_journey, journey_pattern_section_object = create_dataclasses()
-    journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index = map_indicies(service_object,stop_object, vehicle_journey,journey_pattern_section_object)
+def iterate_vjs(service_object, stop_object, vehicle_journey, journey_pattern_section_object, collated_timetable_outbound, collated_timetable_inbound, base_time, journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index ):
 
-    # Define a base time to add run times to
-    base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
 
-    #Dataframe to store all inbound vjs together
-    collated_timetable_inbound = pd.DataFrame()
 
-    # Dataframe to store all outbound vjs together
-    collated_timetable_outbound = pd.DataFrame()
-
-    # Iterate through all vehicle journeys in the file
     for vj in vehicle_journey.VehicleJourney:
+
 
         departure_time = pd.Timedelta(vj.DepartureTime)
 
@@ -391,8 +380,42 @@ def generate_timetable():
     return collated_timetable_outbound, collated_timetable_inbound
 
 
+
+
+
+
+def generate_timetable():
+
+    """Extracts timetable information for a VJ indvidually and
+    adds to a collated dataframe of vjs, split by outbound and inbound"""
+
+    # Define a base time to add run times to
+    base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
+
+    #Dataframe to store all inbound vjs together
+    collated_timetable_inbound = pd.DataFrame()
+
+    # Dataframe to store all outbound vjs together
+    collated_timetable_outbound = pd.DataFrame()
+
+    #Equivalent of create_txc_objects
+    service_object, stop_object, vehicle_journey, journey_pattern_section_object = create_dataclasses()
+
+    #Map Indicies
+    journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index = map_indicies(service_object, stop_object, vehicle_journey, journey_pattern_section_object)
+
+    #.apply needs to be added in main function
+    collated_timetable_outbound, collated_timetable_inbound=iterate_vjs(service_object, stop_object, vehicle_journey, journey_pattern_section_object, collated_timetable_outbound, collated_timetable_inbound, base_time,journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index )
+
+    # Iterate through all vehicle journeys in the file
+
+    return collated_timetable_outbound, collated_timetable_inbound
+
+#
+
 outbound_timetables = {}
 inbound_timetables = {}
+
 
 
 generate_timetable()

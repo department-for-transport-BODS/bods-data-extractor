@@ -26,8 +26,8 @@ from collections import Counter
 import importlib.resources
 from shapely.geometry import Point
 from geopandas import GeoDataFrame
-#import plotly.express as px
-#import plotly.io as pio
+# import plotly.express as px
+# import plotly.io as pio
 import pandas as pd
 from dataclasses import dataclass
 from dacite import from_dict
@@ -237,7 +237,7 @@ class TimetableExtractor:
                 process_namespaces=False,
                 attr_prefix='_',
                 force_list=(
-                'JourneyPatternSection', 'JourneyPatternTimingLink', 'VehicleJourney', 'VehicleJourneyTimingLink'))
+                    'JourneyPatternSection', 'JourneyPatternTimingLink', 'VehicleJourney', 'VehicleJourneyTimingLink'))
 
             journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']  # ['JourneyPatternSection']
             xml_output.append(journey_pattern_json)
@@ -904,7 +904,7 @@ class TimetableExtractor:
 
         # get depature times for the first stop
         stop_level_joined_clean.loc[stop_level_joined_clean["sequence_number"] == 1, "runtime"] = \
-        stop_level_joined_clean['DepartureTime']
+            stop_level_joined_clean['DepartureTime']
 
         return stop_level_joined_clean
 
@@ -1769,7 +1769,7 @@ class TimetableExtractor:
 
         return runtime
 
-    def extract_common_name(self,stop_object, StopPointRef, stop_point_index):
+    def extract_common_name(self, stop_object, StopPointRef, stop_point_index):
         """Extract information about the name of the stop including longitude and latitude"""
 
         stop_common_name = stop_object.AnnotatedStopPointRef[stop_point_index[StopPointRef]].CommonName
@@ -1785,11 +1785,13 @@ class TimetableExtractor:
 
         return stop_common_name, stop_lat, stop_long
 
-    def next_jptl_in_sequence(self, jptl, vj_departure_time, vj, vjtl_index,stop_object,stop_point_index,  first_jptl=False):
+    def next_jptl_in_sequence(self, jptl, vj_departure_time, vj, vjtl_index, stop_object, stop_point_index,
+                              first_jptl=False):
         """Returns the sequence number, stop point ref and time for a JPTL to be added to a outboud or inbound df"""
 
         runtime = self.extract_runtimes(vj, jptl, vjtl_index)
-        common_name, latitude, longitude = self.extract_common_name(stop_object, str(jptl.To.StopPointRef), stop_point_index)
+        common_name, latitude, longitude = self.extract_common_name(stop_object, str(jptl.To.StopPointRef),
+                                                                    stop_point_index)
 
         to_sequence = [int(jptl.To.sequence_number),
                        str(jptl.To.StopPointRef),
@@ -1799,7 +1801,8 @@ class TimetableExtractor:
                        pd.Timedelta(runtime)]
 
         if first_jptl:
-            common_name, latitude, longitude = self.extract_common_name(stop_object, jptl.From.StopPointRef, stop_point_index)
+            common_name, latitude, longitude = self.extract_common_name(stop_object, jptl.From.StopPointRef,
+                                                                        stop_point_index)
 
             from_sequence = [int(jptl.From.sequence_number),
                              str(jptl.From.StopPointRef),
@@ -1920,7 +1923,7 @@ class TimetableExtractor:
 
         return self.stop_object
 
-    #def map_indicies(self,service_object,stop_object, vehicle_journey,journey_pattern_section_object ):
+    # def map_indicies(self,service_object,stop_object, vehicle_journey,journey_pattern_section_object ):
     def map_indicies(self):
         """Initialise values to be used when generating timetables"""
 
@@ -1939,48 +1942,45 @@ class TimetableExtractor:
 
         return self.journey_pattern_section_index, self.journey_pattern_index, self.journey_pattern_list, self.stop_point_index
 
+    def map_indicies_new(self, service_object, stop_object, vehicle_journey, journey_pattern_section_object):
+        """Initialise values to be used when generating timetables"""
+
+        # List of journey patterns in service object
+        journey_pattern_list = service_object.StandardService.JourneyPattern
+
+        # Iterate once through JPs and JPS to find the indices in the list of each id
+        journey_pattern_index = {key.id: value for value, key in
+                                 enumerate(service_object.StandardService.JourneyPattern)}
+        journey_pattern_section_index = {key.id: value for value, key in
+                                         enumerate(journey_pattern_section_object.JourneyPatternSection)}
+
+        # Map stop point refs
+        stop_point_index = {key.StopPointRef: value for value, key in enumerate(stop_object.AnnotatedStopPointRef)}
+
+        return journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index
+
+
     def create_txc_objects(self):
 
-        self.timetable_service_extract = self.service_line_extract_with_stop_level_json.copy(deep=True)
+        self.stop_level_extract = self.service_line_extract_with_stop_level_json.copy(deep=True)
 
-        self.timetable_service_extract['vj_objects'] = self.timetable_service_extract[
+        self.stop_level_extract['vj_objects'] = self.stop_level_extract[
             'vehicle_journey_json'].apply(self.create_vehicle_journey_object)
 
-        self.timetable_service_extract['jps_objects'] = self.timetable_service_extract[
+        self.stop_level_extract['jps_objects'] = self.stop_level_extract[
             'journey_pattern_json'].apply(self.create_journey_pattern_section_object)
 
-        self.timetable_service_extract['service_object'] = self.timetable_service_extract[
+        self.stop_level_extract['service_object'] = self.stop_level_extract[
             'services_json'].apply(self.create_service_object)
 
-        self.timetable_service_extract['stop_objects'] = self.timetable_service_extract[
+        self.stop_level_extract['stop_objects'] = self.stop_level_extract[
             'stops_json'].apply(self.create_stop_object)
 
-    def generate_timetable_stop(self):
+    def iterate_vjs(self,service_object, stop_object, vehicle_journey, journey_pattern_section_object,
+                    collated_timetable_outbound, collated_timetable_inbound, base_time, journey_pattern_section_index,
+                    journey_pattern_index, journey_pattern_list, stop_point_index):
 
-        """Extracts timetable information for a VJ individually and
-        adds to a collated dataframe of vjs, split by outbound and inbound"""
-
-
-
-        # Define a base time to add run times to
-        base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
-
-        # Dataframe to store all inbound vjs together
-        self.collated_timetable_inbound = pd.DataFrame()
-
-        # Dataframe to store all outbound vjs together
-        self.collated_timetable_outbound = pd.DataFrame()
-
-        self.create_txc_objects()
-
-        #Map Indicies
-        
-        
-        #journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index = TimetableExtractor.map_indicies(self, self.service_object,self.stop_object, self.vehicle_journey,self.journey_pattern_section_object)
-        journey_pattern_section_index, journey_pattern_index, journey_pattern_list, stop_point_index = TimetableExtractor.map_indicies(self)
-
-        # Iterate through all vehicle journeys in the file
-        for vj in self.vehicle_journey.VehicleJourney:
+        for vj in vehicle_journey.VehicleJourney:
 
             departure_time = pd.Timedelta(vj.DepartureTime)
 
@@ -2005,30 +2005,29 @@ class TimetableExtractor:
                               enumerate(vj.VehicleJourneyTimingLink)}
 
             # Create vars for relevant indices of this vehicle journey
-            vehicle_journey_jp_index = self.journey_pattern_index[vj.JourneyPatternRef]
+            vehicle_journey_jp_index = journey_pattern_index[vj.JourneyPatternRef]
 
-            direction = self.service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
-            RouteRef = self.service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
-            JourneyPattern_id = self.service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].id
+            direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
+            RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
+            JourneyPattern_id = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].id
 
-            vehicle_journey_jps_list = self.service_object.StandardService.JourneyPattern[
-                self.journey_pattern_index[vj.JourneyPatternRef]].JourneyPatternSectionRefs
+            # Get the journey pattern sections for this vehicle journey, can be a single string or a list of strings
+            vehicle_journey_jps_list = service_object.StandardService.JourneyPattern[
+                journey_pattern_index[vj.JourneyPatternRef]].JourneyPatternSectionRefs
 
             # If there are multiple JPS, put them into a single list for later
             if isinstance(vehicle_journey_jps_list, list):
-                vehicle_journey_jps_index = [self.journey_pattern_section_index[jpsr] for jpsr in
-                                             self.journey_pattern_list[
-                                                 vehicle_journey_jp_index].JourneyPatternSectionRefs]
+                vehicle_journey_jps_index = [journey_pattern_section_index[jpsr] for jpsr in
+                                             journey_pattern_list[vehicle_journey_jp_index].JourneyPatternSectionRefs]
                 all_jptl = [
-                    [jptl for jptl in
-                     self.journey_pattern_section_object.JourneyPatternSection[x].JourneyPatternTimingLink] for x in
-                    vehicle_journey_jps_index]
+                    [jptl for jptl in journey_pattern_section_object.JourneyPatternSection[x].JourneyPatternTimingLink]
+                    for x in vehicle_journey_jps_index]
                 flat_jptl = [jptl for sublist in all_jptl for jptl in sublist]
 
             # if just one JPS, find the journey pattern section directly for later
             else:
-                vehicle_journey_jps_index = self.journey_pattern_section_index[vehicle_journey_jps_list]
-                flat_jptl = self.journey_pattern_section_object.JourneyPatternSection[
+                vehicle_journey_jps_index = journey_pattern_section_index[vehicle_journey_jps_list]
+                flat_jptl = journey_pattern_section_object.JourneyPatternSection[
                     vehicle_journey_jps_index].JourneyPatternTimingLink
 
             # Mark the first JPTL
@@ -2045,12 +2044,12 @@ class TimetableExtractor:
                     first = False
 
                     timetable_sequence = self.next_jptl_in_sequence(JourneyPatternTimingLink,
-                                                                    departure_time,
-                                                                    vj,
-                                                                    vjtl_index,
-                                                                    self.stop_object,
-                                                                    stop_point_index,
-                                                                    first_jptl=True)
+                                                               departure_time,
+                                                               vj,
+                                                               vjtl_index,
+                                                               stop_object,
+                                                               stop_point_index,
+                                                               first_jptl=True)
 
                     # Add first sequence, stop ref and departure time
                     first_timetable_row = pd.DataFrame([timetable_sequence[0]], columns=outbound.columns)
@@ -2068,12 +2067,8 @@ class TimetableExtractor:
                         print(f'Unknown Direction: {direction}')
 
                 else:
-                    timetable_sequence = self.next_jptl_in_sequence(JourneyPatternTimingLink,
-                                                                    departure_time,
-                                                                    vj,
-                                                                    vjtl_index,
-                                                                    self.stop_object,
-                                                                    stop_point_index)
+                    timetable_sequence = self.next_jptl_in_sequence(JourneyPatternTimingLink, departure_time, vj, vjtl_index,
+                                                               stop_object, stop_point_index)
 
                     if direction == 'outbound':
                         outbound.loc[len(outbound)] = timetable_sequence
@@ -2083,11 +2078,15 @@ class TimetableExtractor:
                         print(f'Unknown Direction: {direction}')
 
             if vj.OperatingProfile is None:
-                days = self.service_object.OperatingProfile.RegularDayType.DaysOfWeek
+                days = service_object.OperatingProfile.RegularDayType.DaysOfWeek
             else:
                 days = vj.OperatingProfile.RegularDayType.DaysOfWeek
 
-            operating_days = self.extract_timetable_operating_days(days)
+            if days is None and (
+                    service_object.OperatingProfile.BankHolidayOperation.DaysOfOperation is not None or vj.OperatingProfile.BankHolidayOperation.DaysOfOperation is not None):
+                operating_days = "Holidays Only"
+            else:
+                operating_days = self.extract_timetable_operating_days(days)
 
             if not outbound.empty:
                 outbound[f"{vj.VehicleJourneyCode}"] = self.reformat_times(outbound, vj, base_time)
@@ -2098,52 +2097,93 @@ class TimetableExtractor:
                 inbound = self.add_dataframe_headers(inbound, operating_days, JourneyPattern_id, RouteRef, lineref)
 
             # collect vj information together for outbound
-            self.collated_timetable_outbound = self.collate_vjs(outbound, self.collated_timetable_outbound)
+            collated_timetable_outbound = self.collate_vjs(outbound, collated_timetable_outbound)
 
-            # collect vj information together for inbound
-            self.collated_timetable_inbound = self.collate_vjs(inbound, self.collated_timetable_inbound)
+        # collect vj information together for inbound
+        collated_timetable_inbound = self.collate_vjs(inbound, collated_timetable_inbound)
 
-        self.collated_timetable_outbound, self.collated_timetable_inbound = self.organise_timetables(
-            self.service_object,
-            self.collated_timetable_outbound,
-            self.collated_timetable_inbound)
+        collated_timetable_outbound, collated_timetable_inbound = self.organise_timetables(service_object,
+                                                                                      collated_timetable_outbound,
+                                                                                      collated_timetable_inbound)
 
-        self.timetable_dict = {'outbound': self.collated_timetable_outbound, 'inbound': self.collated_timetable_inbound}
+        collated_timetable_outbound, collated_timetable_inbound = self.organise_timetables(
+            service_object,
+            collated_timetable_outbound,
+            collated_timetable_inbound)
 
-        return self.timetable_dict
+        return collated_timetable_outbound, collated_timetable_inbound
+
+    def generate_timetable_stop(self):
+
+        """Extracts timetable information for a VJ individually and
+        adds to a collated dataframe of vjs, split by outbound and inbound"""
+
+        # Define a base time to add run times to
+        base_time = datetime.datetime(2000, 1, 1, 0, 0, 0)
+
+        # Dataframe to store all inbound vjs together
+        self.collated_timetable_inbound = pd.DataFrame()
+
+        # Dataframe to store all outbound vjs together
+        self.collated_timetable_outbound = pd.DataFrame()
+
+        self.create_txc_objects()
+
+        # Map Indicies based on objects present on dataframe row
+        self.stop_level_extract[
+            ['jps_index', 'jpindex', 'jplist', 'stop_index']] = self.stop_level_extract.apply(
+            lambda x: TimetableExtractor.map_indicies_new(self, x.service_object, x.stop_objects, x.vj_objects,
+                                                          x.jps_objects), axis=1).apply(pd.Series)
+
+        # Create Inbound and Outbound Timetables based on objects and indices
+        self.stop_level_extract[['collated_timetable_outbound', 'collated_timetable_inbound']] = self.stop_level_extract.apply(lambda x: TimetableExtractor.iterate_vjs(self,x.service_object,
+                                                                                                 x.stop_objects,
+                                                                                                 x.vj_objects,
+                                                                                                 x.jps_objects,
+                                                                                                 self.collated_timetable_outbound,
+                                                                                                 self.collated_timetable_inbound,
+                                                                                                 base_time,
+                                                                                                 x.jps_index,
+                                                                                                 x.jpindex,
+                                                                                                 x.jplist,
+                                                                                                 x.stop_index), axis=1).apply(pd.Series)
+        #Reduce size of stop level extract
+        self.stop_level_extract = self.stop_level_extract.drop(columns=['dq_score', 'OperatorShortName', 'Status', 'services_json', 'NOC', 'PublicUse','TradingName','SchemaVersion', 'OperatorName','LicenceNumber','Origin', 'vehicle_journey_json','OperatorCode','Destination','dq_rag', 'Description','Comment', 'FileType','bods_compliance','journey_pattern_json','stops_json', 'OperatingPeriodEndDate', 'la_code', 'vj_objects','jps_objects','service_object','stop_objects','jps_index', 'jpindex', 'jplist', 'stop_index'  ])
+
+        return self.stop_level_extract
 
     def organise_timetables(self, service_object, collated_timetable_outbound, collated_timetable_inbound):
         """Ordering the timetables correctly"""
 
         service_code = str(self.service_object.ServiceCode)
 
-        if not self.collated_timetable_outbound.empty:
+        if not collated_timetable_outbound.empty:
             # ensuring the vjs times are sorted in ascending order
-            self.collated_timetable_outbound.iloc[:, 5:] = self.collated_timetable_outbound.iloc[:, 5:].iloc[:,
+            collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:,
                                                            ::-1].values
 
             # ensuring the sequence numbers are sorted in ascending order
-            self.collated_timetable_outbound.iloc[4:] = self.collated_timetable_outbound.iloc[4:].sort_values(
+            collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(
                 by="Sequence Number",
                 ascending=True)
 
             # add this to a collection of outbound timetable dataframes in a dictionary
-            self.outbound_timetables[service_code] = self.collated_timetable_outbound.to_dict()
+            self.outbound_timetables[service_code] = collated_timetable_outbound.to_dict()
 
-        if not self.collated_timetable_inbound.empty:
+        if not collated_timetable_inbound.empty:
             # ensuring the vjs times are sorted in ascending order
-            self.collated_timetable_inbound.iloc[:, 5:] = self.collated_timetable_inbound.iloc[:, 5:].iloc[:,
+            collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:,
                                                           ::-1].values
 
             # ensuring the sequence numbers are sorted in ascending order
-            self.collated_timetable_inbound.iloc[4:] = self.collated_timetable_inbound.iloc[4:].sort_values(
+            collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(
                 by="Sequence Number",
                 ascending=True)
 
             # add this to a collection of inbound timetable dataframes in a dictionary
-            self.inbound_timetables[service_code] = self.self.collated_timetable_inbound.to_dict()
+            self.inbound_timetables[service_code] = collated_timetable_inbound.to_dict()
 
-        return self.collated_timetable_outbound, self.collated_timetable_inbound
+        return collated_timetable_outbound, collated_timetable_inbound
 
 
 class xmlDataExtractor:
@@ -2538,10 +2578,13 @@ api = "api"
 # -------------------------------------------
 # intiate an object instance called my_bus_data_object with desired parameters
 
-bus = TimetableExtractor(api_key=api
+bus = TimetableExtractor(api_key=api,
+                         limit=1
                          , status='published'
                          , service_line_level=True
                          , stop_level=True
                          , nocs=['RBTS']
                          , bods_compliant=True
                          )
+
+

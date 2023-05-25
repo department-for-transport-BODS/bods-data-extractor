@@ -429,6 +429,13 @@ published_not_registered_services = my_bus_data_object.published_not_registered_
 
 Reporting and analytics can be performed with the builtin functions as shown above. This code first fetches the latest copy of the otc database and compares it to a copy of the service line level data extracted using `service_line_extract`. The code returns a dataframe listing information about service codes registered with OTC but not published in the BODS data.
 
+#### Analysis Example
+
+Going beyond the built-in analysis and reporting functions, the data can also be used to answer more complex questions. One example of this is: 
+
+How many of the downloaded services have a timetable that begins before 8am? 
+
+We have provided a suggested solution to this within the package, [here](src\analysis_example.py).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

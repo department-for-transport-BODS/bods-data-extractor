@@ -76,12 +76,12 @@ class WorkingDays:
 
 @dataclass
 class ServicedOrganisationDayType:
-    DaysOfOperation: WorkingDays
+    DaysOfOperation: Optional[WorkingDays]
 
 
 @dataclass
 class BankHolidayOperation:
-    DaysOfNonOperation: Dict
+    DaysOfNonOperation: Optional[Dict]
     DaysOfOperation: Optional[Dict]
 
 
@@ -90,7 +90,7 @@ class From:
     Activity: Optional[str]
     StopPointRef: Optional[str]
     TimingStatus: Optional[str]
-    _SequenceNumber: Optional[str]
+    _SequenceNumber: Optional[str] = 0
 
     @property
     def sequence_number(self):
@@ -102,7 +102,7 @@ class From:
 class To:
     StopPointRef: Optional[str]
     TimingStatus: Optional[str]
-    _SequenceNumber: Optional[str]
+    _SequenceNumber: Optional[str] = 1
 
     @property
     def sequence_number(self):
@@ -112,7 +112,7 @@ class To:
 @dataclass
 class OperatingProfile:
     RegularDayType: RegularDayType
-    BankHolidayOperation: BankHolidayOperation
+    BankHolidayOperation: Optional[BankHolidayOperation]
     PublicUse: Optional[str]
     DaysOfNonOperation: Optional[Dict]
     RegisteredOperatorRef: Optional[str]
@@ -136,7 +136,7 @@ class VehicleJourneyTimingLinks:
 
 @dataclass
 class VehicleJourney:
-    OperatorRef: str
+    OperatorRef: Optional[str]
     Operational: Optional[Operational]
     VehicleJourneyCode: str
     ServiceRef: str
@@ -156,9 +156,9 @@ class VehicleJourneys:
 @dataclass
 class JourneyPattern:
     DestinationDisplay: str
-    OperatorRef: str
+    OperatorRef: Optional[str]
     Direction: str
-    RouteRef: str
+    RouteRef: Optional[str]
     JourneyPatternSectionRefs: Union[str, list]
     _id: Optional[str]
 
@@ -172,14 +172,15 @@ class StandardService:
     Origin: str
     Destination: str
     UseAllPoints: Optional[str]
-    JourneyPattern: Union[JourneyPattern, List[JourneyPattern]]
+    #JourneyPattern: Union[JourneyPattern, List[JourneyPattern]]
+    JourneyPattern: List[JourneyPattern]
 
 
 @dataclass
 class Line:
     _id: Optional[str]
     LineName: str
-    OutboundDescription: OutboundDescription
+    OutboundDescription: Optional[OutboundDescription]
     InboundDescription: Optional[InboundDescription]
 
     @property
@@ -200,7 +201,7 @@ class Service:
     OperatingProfile: Optional[OperatingProfile]
     TicketMachineServiceCode: Optional[str]
     RegisteredOperatorRef: str
-    PublicUse: str
+    PublicUse: Optional[str]
     StandardService: StandardService
 
 
@@ -210,7 +211,7 @@ class JourneyPatternTimingLink:
     _id: str
     From: From
     To: To
-    RouteLinkRef: str
+    RouteLinkRef: Optional[str]
     RunTime: str
 
     @property

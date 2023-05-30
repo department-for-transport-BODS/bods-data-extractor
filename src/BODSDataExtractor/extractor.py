@@ -1506,6 +1506,9 @@ class TimetableExtractor:
         #Reduce size of stop level extract
         self.stop_level_extract = self.stop_level_extract.drop(columns=['dq_score', 'OperatorShortName', 'Status', 'services_json', 'NOC', 'PublicUse','TradingName','SchemaVersion', 'OperatorName','LicenceNumber','Origin', 'vehicle_journey_json','OperatorCode','Destination','dq_rag', 'Description','Comment', 'FileType','bods_compliance','journey_pattern_json','stops_json', 'OperatingPeriodEndDate', 'la_code', 'vj_objects','jps_objects','service_object','stop_objects','jps_index', 'jpindex', 'jplist', 'stop_index'  ])
         print('Timetables Generated!')
+
+        self.stop_level_extract = self.stop_level_extract.to_dict()
+
         return self.stop_level_extract
 
     def organise_timetables(self, service_object, collated_timetable_outbound, collated_timetable_inbound):

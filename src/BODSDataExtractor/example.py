@@ -23,6 +23,8 @@ api = os.environ.get('BODS_API_KEY')
 #intiate an object instance called my_bus_data_object with desired parameters 
 
 my_bus_data_object = TimetableExtractor(api_key=api
+                                 ,limit=0
+                                 ,offset=0
                                  ,status = 'published' 
                                  ,service_line_level=True 
                                  ,stop_level=True

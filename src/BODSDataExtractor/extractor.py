@@ -32,10 +32,13 @@ from classes import *
 class TimetableExtractor:
     error_list = []
 
-    def __init__(self, api_key, limit=10_000, nocs=None, status='published', search=None, bods_compliant=True,
-                 atco_code=None, service_line_level=False, stop_level=False, threaded=False):
+    
+    def __init__(self, api_key, limit=10_000, offset=0, nocs=None, status='published',
+                 search=None, bods_compliant=True, atco_code=None, service_line_level=False,
+                 stop_level=False, threaded=False):
         self.api_key = api_key
         self.limit = limit
+        self.offset = offset
         self.nocs = nocs
         self.status = status
         self.search = search
@@ -101,6 +104,7 @@ class TimetableExtractor:
         """
         bods = BODSClient(api_key=self.api_key)
         params = timetables.TimetableParams(limit=self.limit,
+                                            offset=self.offset,
                                             nocs=self.nocs,
                                             status=self.status,
                                             admin_areas=self.atco_code,

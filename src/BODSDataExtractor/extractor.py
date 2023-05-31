@@ -1927,24 +1927,4 @@ class xmlDataExtractor:
         return unique_atco_first_3_letters
 
 
-import os
-
-# retrieve api key from environment variables
-api = os.environ.get("BODS_API_KEY")
-
-# -------------------------------------------
-#            FINE TUNED RESULTS
-# -------------------------------------------
-# intiate an object instance called my_bus_data_object with desired parameters
-
-bus = TimetableExtractor(api_key=api
-                         , limit=1
-                         , status='published'
-                         , service_line_level=True
-                         , stop_level=True
-                         , nocs=['BULL']
-                         , bods_compliant=True
-                         #, threaded=True
-                         )
-
 

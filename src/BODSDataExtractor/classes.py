@@ -43,19 +43,19 @@ class TicketMachine:
 
 @dataclass
 class Operational:
-    TicketMachine: TicketMachine
+    TicketMachine: Optional[TicketMachine]
 
 
 @dataclass
 class OutboundDescription:
-    Description: str
+    Description: Optional[str]
     Origin: Optional[str]
     Destination: Optional[str]
 
 
 @dataclass
 class InboundDescription:
-    Description: str
+    Description: Optional[str]
 
 
 @dataclass
@@ -111,7 +111,7 @@ class To:
 
 @dataclass
 class OperatingProfile:
-    RegularDayType: RegularDayType
+    RegularDayType: Optional[RegularDayType]
     BankHolidayOperation: Optional[BankHolidayOperation]
     PublicUse: Optional[str]
     DaysOfNonOperation: Optional[Dict]

@@ -534,35 +534,56 @@ class TimetableExtractor:
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
 
     def save_dataframe_to_csv(self,dataframe, column_name, folder_path):
-        # Create the folder if it doesn't exist
+        '''
+        Create the name of the timetable file and save the timetable to the project folder in the specified folders "outbound_timetable_folder" and "inbound_timetable_folder"
+        '''
 
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
         for index, row in dataframe.iterrows():
+            #Create a dataframe from the specified column name, either for inbound or outbound timetables
             df = row[column_name]
+            #Extract information for each timetable
             ServiceCode=str(dataframe.loc[index, "ServiceCode"])
             LineName=str(dataframe.loc[index, "LineName"])
             OperatingDays = str(dataframe.loc[index, "OperatingDays"])
             RevisionNumber = str(dataframe.loc[index, "RevisionNumber"])
             Filename=str(dataframe.loc[index, "FileName"])
 
+            #Clean the data gathered above so that it can be saved
+            Filename=(Filename.split("\\")[-1]).replace(".xml","")
+            ServiceCode = ServiceCode.replace(":", ";")
+
+            #Shorten the filename if it exceeds 80 characters
+            if len(Filename)>80:
+                Filename=Filename[:77]
+            else:
+                pass
+
+            #Create the name of the timetable file
             timetable_file= ServiceCode+"-"+LineName+"_"+OperatingDays+"_"+"RN-"+RevisionNumber+"-"+Filename
 
-            timetable_file = timetable_file.replace(":", "_")
-
-            csv_file_path = os.path.join(folder_path, f"{''}{timetable_file}.csv")
-
+            #If the dataframe is empty, continue
             if df.empty:
                 continue
             else:
+                #If the service doesn't exist, create a folder for it, otherwise save the new timetable inside of it
+                if not os.path.exists(folder_path + "/" + ServiceCode):
+                    os.makedirs(folder_path + "/" + ServiceCode)
+                csv_file_path = os.path.join(folder_path, ServiceCode, f"{''}{timetable_file}.csv")
+
                 df.to_csv(csv_file_path, index=False)
                 print(f"Saved {timetable_file}.csv to {folder_path}")
 
     def save_timetables(self):
+        '''
+        Save the timetable dataframe to a csv file, seperated into inbound and outbound journeys
+        '''
+
         df = self.stop_level_extract
-        self.save_dataframe_to_csv(df, 'collated_timetable_outbound', 'outbound_folder')
-        self.save_dataframe_to_csv(df, 'collated_timetable_inbound', 'inbound_folder')
+        self.save_dataframe_to_csv(df, 'collated_timetable_outbound', 'outbound_timetable_folder')
+        self.save_dataframe_to_csv(df, 'collated_timetable_inbound', 'inbound_timetable_folder')
 
 
     def save_filtered_timetables_to_csv(self, service_code):
@@ -679,16 +700,21 @@ class TimetableExtractor:
     def no_licence_no(self):
         '''how many files have no licence number'''
 
-        # analytical_data = TimetableExtractor.analytical_timetable_data(self)
-        grouped = self.service_line_extract_with_stop_level_json[
-            self.service_line_extract_with_stop_level_json['LicenceNumber'].map(len) == 0]
+        no_licence_number_total=self.service_line_extract_with_stop_level_json['LicenceNumber'].isna().sum()
 
-        datasets = grouped['URL'].unique()
+        if no_licence_number_total<=0:
+            # analytical_data = TimetableExtractor.analytical_timetable_data(self)
+            grouped = self.service_line_extract_with_stop_level_json[
+                self.service_line_extract_with_stop_level_json['LicenceNumber'].map(len) == 0]
+            datasets = grouped['URL'].unique()
+            print(f'\nNumber of datasets with files containing no licence number: {len(datasets)}')
+            print(*datasets, sep=', ')
+            return grouped
 
-        print(f'\nNumber of datasets with files containing no licence number: {len(datasets)}')
-        print(*datasets, sep=', ')
+        elif no_licence_number_total>0:
+            print(f'\nNumber of datasets with files containing no licence number: {no_licence_number_total}')
+            return no_licence_number_total
 
-        return grouped
 
     # =============================================================================
     #     ## DFT Reporting ###
@@ -1286,13 +1312,14 @@ class TimetableExtractor:
 
         return timetable[f"{vj.VehicleJourneyCode}"]
 
-    def add_dataframe_headers(self, direction, operating_days, JourneyPattern_id, RouteRef, lineref):
+    def add_dataframe_headers(self, direction, operating_days, JourneyPattern_id, RouteRef, lineref, JourneyCode):
         """Populate headers with information associated to each individual VJ"""
 
         direction.loc[-1] = ["Operating Days ", "->", "->", "->", "->", operating_days]
         direction.loc[-2] = ["Journey Pattern ", "->", "->", "->", "->", JourneyPattern_id]
-        direction.loc[-3] = ["RouteID", "->", "->", "->", "->", RouteRef]
-        direction.loc[-4] = ["Line", "->", "->", "->", "->", lineref]
+        direction.loc[-3] = ["Journey Code", "->", "->", "->", "->", JourneyCode]
+        direction.loc[-4] = ["RouteID", "->", "->", "->", "->", RouteRef]
+        direction.loc[-5] = ["Line", "->", "->", "->", "->", lineref]
         direction.index = direction.index + 1  # shifting index
         direction.sort_index(inplace=True)
 
@@ -1402,6 +1429,10 @@ class TimetableExtractor:
             direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
             RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
             JourneyPattern_id = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].id
+            if vehicle_journey.VehicleJourney[vehicle_journey_jp_index].Operational is None or vehicle_journey.VehicleJourney[vehicle_journey_jp_index].Operational.TicketMachine is None:
+                JourneyCode=None
+            else:
+                JourneyCode=vehicle_journey.VehicleJourney[vehicle_journey_jp_index].Operational.TicketMachine.JourneyCode
 
             # Get the journey pattern sections for this vehicle journey, can be a single string or a list of strings
             vehicle_journey_jps_list = service_object.StandardService.JourneyPattern[
@@ -1486,11 +1517,11 @@ class TimetableExtractor:
 
             if not outbound.empty:
                 outbound[f"{vj.VehicleJourneyCode}"] = self.reformat_times(outbound, vj, base_time)
-                outbound = self.add_dataframe_headers(outbound, operating_days, JourneyPattern_id, RouteRef, lineref)
+                outbound = self.add_dataframe_headers(outbound, operating_days, JourneyPattern_id, RouteRef, lineref,JourneyCode)
 
             if not inbound.empty:
                 inbound[f"{vj.VehicleJourneyCode}"] = self.reformat_times(inbound, vj, base_time)
-                inbound = self.add_dataframe_headers(inbound, operating_days, JourneyPattern_id, RouteRef, lineref)
+                inbound = self.add_dataframe_headers(inbound, operating_days, JourneyPattern_id, RouteRef, lineref,JourneyCode)
 
         # collect vj information together for outbound
         collated_timetable_outbound = self.collate_vjs(outbound, collated_timetable_outbound)
@@ -1565,7 +1596,7 @@ class TimetableExtractor:
                                                       ::-1].values
 
             # ensuring the sequence numbers are sorted in ascending order
-            collated_timetable_outbound.iloc[4:] = collated_timetable_outbound.iloc[4:].sort_values(
+            collated_timetable_outbound.iloc[5:] = collated_timetable_outbound.iloc[5:].sort_values(
                 by="Sequence Number",
                 ascending=True)
 
@@ -1578,7 +1609,7 @@ class TimetableExtractor:
                                                      ::-1].values
 
             # ensuring the sequence numbers are sorted in ascending order
-            collated_timetable_inbound.iloc[4:] = collated_timetable_inbound.iloc[4:].sort_values(
+            collated_timetable_inbound.iloc[5:] = collated_timetable_inbound.iloc[5:].sort_values(
                 by="Sequence Number",
                 ascending=True)
 

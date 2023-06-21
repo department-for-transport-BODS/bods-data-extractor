@@ -45,7 +45,6 @@ filtered_service_line_level = my_bus_data_object.service_line_extract
 my_bus_data_object.save_service_line_extract_to_csv()
 
 #stop_level_extract is a dataframe, which contains a collumn of timetables (inbound/outbound) to be saved to csv as follows (saves in project folder)
-#my_bus_data_object.save_all_timetables_to_csv()
 my_bus_data_object.save_timetables()
 
 #visualise a particular service line on an interactive map

@@ -131,7 +131,7 @@ class VehicleJourneyTimingLink:
 @dataclass
 class VehicleJourneyTimingLinks:
 
-    VehicleJourneyTimingLink: list[VehicleJourneyTimingLink]
+    VehicleJourneyTimingLink: List[VehicleJourneyTimingLink]
 
 
 @dataclass
@@ -145,7 +145,7 @@ class VehicleJourney:
     DepartureTime: str
     OperatingProfile: Optional[OperatingProfile]
     DepartureDayShift: Optional[str]
-    VehicleJourneyTimingLink: Optional[list[VehicleJourneyTimingLink]]
+    VehicleJourneyTimingLink: Optional[List[VehicleJourneyTimingLink]]
 
 
 @dataclass
@@ -191,7 +191,7 @@ class Line:
 
 @dataclass
 class Lines:
-    Line: list[Line]
+    Line: List[Line]
 
 @dataclass
 class Service:

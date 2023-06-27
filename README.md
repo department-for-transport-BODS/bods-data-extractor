@@ -178,7 +178,7 @@ TimetableExtractor.metadata
 TimetableExtractor.service_line_extract
 
 #Stop Level
-TimetableExtractor.timetable_dict
+TimetableExtractor.stop_level_extract
 ```
 
 ### Example of timetables output

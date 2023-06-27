@@ -176,6 +176,10 @@ class TimetableExtractor:
         """Download the txc data from a dataset url (can be zip or single xml) and
         extracts the data into a Pandas dataframe."""
         response = requests.get(url)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise e
         filetype = self._dataset_filetype(response.headers)
 
         if filetype == '.zip':

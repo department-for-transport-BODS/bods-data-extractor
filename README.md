@@ -259,22 +259,20 @@ my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
                                  ,stop_level=True # True if you require stop level data
                                  )
 
-#save the extracted stop level data to stop_level variable
-stop_level = my_bus_data_object.timetable_dict
+#save the extracted dataset level data to filtered_dataset_level variable
+filtered_dataset_level = my_bus_data_object.metadata
 
-#note that in downloading stop level the  data, the dataset and service line level will also be downloaded. Can access this as below:
-dataset_level = my_bus_data_object.metadata
-service_line_level = my_bus_data_object.service_line_extract
-
-#save metadata and service line level data to csv file in your downloads directory
+#save the extracted dataset level data to lcoal csv file
 my_bus_data_object.save_metadata_to_csv()
+
+#save the extracted service line level data to dataset_level variable
+filtered_service_line_level = my_bus_data_object.service_line_extract
+
+#save the extracted service line level data to lcoal csv file
 my_bus_data_object.save_service_line_extract_to_csv()
 
-#stop_level variable is a dictionary of dataframes, which can be saved to csv as follows (saves in downloads directory)
-my_bus_data_object.save_all_timetables_to_csv()
-
-#or can filter to filter timetable results to a specfic licence number of service code (saves in downloads directory)
-my_bus_data_object.save_filtered_timetables_to_csv('PC0001838:41')
+#stop_level_extract is a dataframe, which contains a collumn of timetables (inbound/outbound) to be saved to csv as follows (saves in project folder)
+my_bus_data_object.save_timetables()
 
 #visualise a particular service line on an interactive map
 my_bus_data_object.visualise_service_line('PC0001838:41')

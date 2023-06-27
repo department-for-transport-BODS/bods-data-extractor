@@ -553,6 +553,7 @@ class TimetableExtractor:
 
             #Clean the data gathered above so that it can be saved
             Filename=(Filename.split("\\")[-1]).replace(".xml","")
+            Filename = Filename.replace(":", ";")
             ServiceCode = ServiceCode.replace(":", ";")
 
             #Shorten the filename if it exceeds 80 characters
@@ -1163,7 +1164,19 @@ class TimetableExtractor:
     def extract_timetable_operating_days(self, days):
         ''' Ensuring the operating days are ordered appropriately '''
 
-        operating_day_list = list(days)
+        if days is not None:
+            operating_day_list = list(days)
+            if any(day in {"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"} for day in operating_day_list):
+                pass
+            else:
+                operating_days=', '.join(operating_day_list)
+                return operating_days
+
+        else:
+            operating_days= None
+            return operating_days
+
+
 
         # adding dictionary variables and values to "day" dictionary
 
@@ -1291,15 +1304,21 @@ class TimetableExtractor:
         elif collated_timetable.empty:
             # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
             collated_timetable = collated_timetable.merge(direction_df, how='outer', left_index=True, right_index=True)
+
         else:
-            # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
-            collated_timetable = pd.merge(direction_df, collated_timetable, on=["Sequence Number",
+
+            if direction_df["Sequence Number"].equals(collated_timetable["Sequence Number"]) and direction_df['Stop Point Ref'].equals(collated_timetable['Stop Point Ref']) and direction_df["Common Name"].equals(collated_timetable["Common Name"]):
+                last_column = direction_df.iloc[:, -1]
+                collated_timetable=pd.concat([collated_timetable, last_column], axis=1)
+
+            else:
+                # match stop point ref + sequence number with the initial timetable's stop point ref+sequence number
+                collated_timetable = pd.merge(direction_df, collated_timetable, on=["Sequence Number",
                                                                                 'Stop Point Ref',
                                                                                 "Latitude",
                                                                                 "Longitude",
                                                                                 "Common Name"],
-                                          how='outer',
-                                          validate='1:m').fillna("-")
+                                              validate='1:m', how='outer').fillna("-")
 
         return collated_timetable
 
@@ -1429,10 +1448,10 @@ class TimetableExtractor:
             direction = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].Direction
             RouteRef = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].RouteRef
             JourneyPattern_id = service_object.StandardService.JourneyPattern[vehicle_journey_jp_index].id
-            if vehicle_journey.VehicleJourney[vehicle_journey_jp_index].Operational is None or vehicle_journey.VehicleJourney[vehicle_journey_jp_index].Operational.TicketMachine is None:
+            if vj.Operational is None or vj.Operational.TicketMachine is None:
                 JourneyCode=None
             else:
-                JourneyCode=vehicle_journey.VehicleJourney[vehicle_journey_jp_index].Operational.TicketMachine.JourneyCode
+                JourneyCode=str(vj.Operational.TicketMachine.JourneyCode)
 
             # Get the journey pattern sections for this vehicle journey, can be a single string or a list of strings
             vehicle_journey_jps_list = service_object.StandardService.JourneyPattern[
@@ -1503,17 +1522,42 @@ class TimetableExtractor:
                         print(f'Unknown Direction in vehicle journey:{vj}: {direction}')
 
             # Fetch operating profile from either service object or vehicle journey
-            if vj.OperatingProfile is None and service_object.OperatingProfile is not None:
-                days = service_object.OperatingProfile.RegularDayType.DaysOfWeek
-            elif vj.OperatingProfile is not None:
-                days = vj.OperatingProfile.RegularDayType.DaysOfWeek
+           # if vj.OperatingProfile is None and service_object.OperatingProfile is not None:
+           #     days = service_object.OperatingProfile.RegularDayType.DaysOfWeek
+           # elif vj.OperatingProfile is not None:
+           #     days = vj.OperatingProfile.RegularDayType.DaysOfWeek
+
+            if vj.OperatingProfile is not None:
+                if vj.OperatingProfile.RegularDayType.DaysOfWeek is not None:
+                    days = vj.OperatingProfile.RegularDayType.DaysOfWeek
+                elif vj.OperatingProfile.BankHolidayOperation is not None:
+                    days=vj.OperatingProfile.BankHolidayOperation.DaysOfOperation
+
+                else:
+                    days = "Days Not Found"
+
+            elif service_object.OperatingProfile is not None:
+                if service_object.OperatingProfile.RegularDayType.DaysOfWeek is not None:
+                    days = service_object.OperatingProfile.RegularDayType.DaysOfWeek
+                elif service_object.OperatingProfile.BankHolidayOperation is not None:
+                    days=service_object.OperatingProfile.BankHolidayOperation.DaysOfOperation
+                else:
+                    days = "Days Not Found"
             else:
                 days="Days Not Found"
 
-            if days is None and (service_object.OperatingProfile.BankHolidayOperation is None or vj.OperatingProfile.BankHolidayOperation is None):
+            #print(service_object.OperatingProfile)
+            #print (days)
+            #print(service_object.OperatingProfile.BankHolidayOperation)
+            #print(vj.OperatingProfile.BankHolidayOperation is None)
+
+
+
+            if days is None and (service_object.OperatingProfile is None):
                 operating_days = "Error: Check File"
             else:
                 operating_days = self.extract_timetable_operating_days(days)
+
 
             if not outbound.empty:
                 outbound[f"{vj.VehicleJourneyCode}"] = self.reformat_times(outbound, vj, base_time)
@@ -1523,11 +1567,11 @@ class TimetableExtractor:
                 inbound[f"{vj.VehicleJourneyCode}"] = self.reformat_times(inbound, vj, base_time)
                 inbound = self.add_dataframe_headers(inbound, operating_days, JourneyPattern_id, RouteRef, lineref,JourneyCode)
 
-        # collect vj information together for outbound
-        collated_timetable_outbound = self.collate_vjs(outbound, collated_timetable_outbound)
+            # collect vj information together for outbound
+            collated_timetable_outbound = self.collate_vjs(outbound, collated_timetable_outbound)
 
-        # collect vj information together for inbound
-        collated_timetable_inbound = self.collate_vjs(inbound, collated_timetable_inbound)
+            # collect vj information together for inbound
+            collated_timetable_inbound = self.collate_vjs(inbound, collated_timetable_inbound)
 
         collated_timetable_outbound, collated_timetable_inbound = self.organise_timetables(service_object,
                                                                                            collated_timetable_outbound,
@@ -1591,30 +1635,84 @@ class TimetableExtractor:
         service_code = str(service_object.ServiceCode)
 
         if not collated_timetable_outbound.empty:
+
+            #if the journey code matches at the end of the timetable, reverse the order of the headers
+            if collated_timetable_outbound.columns[5] == collated_timetable_outbound.iloc[2, -1]:
+
+                #first reorder the journey codes
+                headers = collated_timetable_outbound.columns.tolist()
+                headers = headers[:5] + headers[5:][::-1]  # Reverse the order of headers after the 5th column
+                collated_timetable_outbound = collated_timetable_outbound[headers]
+
+                #reorder the headers, and readd them to the dataframe so the headers match the journey codes
+                header = collated_timetable_outbound.columns.tolist()
+                headers = header[:5] + header[5:][::-1]
+                collated_timetable_outbound = collated_timetable_outbound.iloc[1:]
+                collated_timetable_outbound = collated_timetable_outbound.reset_index(drop=True)
+                collated_timetable_outbound.columns=headers
+            else:
+                pass
+
+
+
+
             # ensuring the vjs times are sorted in ascending order
-            collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:,
-                                                      ::-1].values
+            collated_timetable_outbound.iloc[:, 5:] = collated_timetable_outbound.iloc[:, 5:].iloc[:,::-1].values
 
-            # ensuring the sequence numbers are sorted in ascending order
-            collated_timetable_outbound.iloc[5:] = collated_timetable_outbound.iloc[5:].sort_values(
-                by="Sequence Number",
-                ascending=True)
+            df1 = collated_timetable_outbound.iloc[:, :5]  # Columns 0 to 4 (inclusive)
+            df2 = collated_timetable_outbound.iloc[:, 5:]  # Columns 5 onwards
 
-            # add this to a collection of outbound timetable dataframes in a dictionary
-            #collated_timetable_outbound = collated_timetable_outbound.to_dict()
+            # Reorder DataFrame 2 based on the values in the 4th row
+            sorted_columns = df2.columns[df2.iloc[4, :].argsort()]
+            df2_sorted = df2[sorted_columns]
+
+            # Join DataFrame 1 and the reordered DataFrame 2
+            collated_timetable_outbound = pd.concat([df1, df2_sorted], axis=1)
+
+             # ensuring the sequence numbers are sorted in ascending order
+            collated_timetable_outbound.iloc[5:] = collated_timetable_outbound.iloc[5:].sort_values(by="Sequence Number",ascending=True)
+
+
+
+
+
 
         if not collated_timetable_inbound.empty:
+
+            # if the journey code matches at the end of the timetable, reverse the order of the headers
+            if collated_timetable_inbound.columns[5] == collated_timetable_inbound.iloc[2, -1]:
+                # first reorder the current timetable, with time ascending
+                headers = collated_timetable_inbound.columns.tolist()
+                headers = headers[:5] + headers[5:][::-1]  # Reverse the order of headers after the 5th column
+                collated_timetable_inbound = collated_timetable_inbound[headers]
+
+                # reorder the headers, and readd them to the dataframe
+                header = collated_timetable_inbound.columns.tolist()
+                headers = header[:5] + header[5:][::-1]
+                collated_timetable_inbound = collated_timetable_inbound.iloc[1:]
+                collated_timetable_inbound = collated_timetable_inbound.reset_index(drop=True)
+                collated_timetable_inbound.columns = headers
+            else:
+                pass
+
             # ensuring the vjs times are sorted in ascending order
-            collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:,
-                                                     ::-1].values
+            collated_timetable_inbound.iloc[:, 5:] = collated_timetable_inbound.iloc[:, 5:].iloc[:,::-1].values
+
+
+            df1 = collated_timetable_inbound.iloc[:, :5]  # Columns 0 to 4 (inclusive)
+            df2 = collated_timetable_inbound.iloc[:, 5:]  # Columns 5 onwards
+
+            # Reorder DataFrame 2 based on the values in the 4th row
+            sorted_columns = df2.columns[df2.iloc[3, :].argsort()]
+            df2_sorted = df2[sorted_columns]
+
+            # Join DataFrame 1 and the reordered DataFrame 2
+            collated_timetable_inbound = pd.concat([df1, df2_sorted], axis=1)
 
             # ensuring the sequence numbers are sorted in ascending order
-            collated_timetable_inbound.iloc[5:] = collated_timetable_inbound.iloc[5:].sort_values(
-                by="Sequence Number",
-                ascending=True)
+            collated_timetable_inbound.iloc[5:] = collated_timetable_inbound.iloc[5:].sort_values(by="Sequence Number",ascending=True)
 
-            # add this to a collection of inbound timetable dataframes in a dictionary
-            #collated_timetable_inbound = collated_timetable_inbound.to_dict()
+
 
         return collated_timetable_outbound, collated_timetable_inbound
 
@@ -1872,7 +1970,7 @@ class xmlDataExtractor:
 
         # if there are no days of operation entered
         if length == 0:
-            operating_days = "None"
+            operating_days = "Other"
 
         # if there is only one day of operation
         elif length == 1:

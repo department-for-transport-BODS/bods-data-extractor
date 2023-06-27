@@ -441,9 +441,6 @@ As the first release of this project, the focus was on getting analytical ready 
 #### Handling non standard files
 Whilst all BODS compliant files meet a certain set of standards, there is still variation in exactly how timetables xml files can be populated. This pacakge currently handles files that meet the most common structure, and a number of notable exceptions, however there are some files that stop level timetables will not be generated for. It will, however, generate dataset level and service line level data for all published files. Future releases will aim to close this gap so timetables can be generated for most, if not all files.
 
-#### Handling vehicle journeys that cross midnight
-As the PTI standards dictate, sequence number logic is different for services that have stop times which cross midnight. This currently results in the stop level timetable output having vehicle journeys that do not start at sequence number 1. Future releases will include logic that better handles this to provide a more uniform output for such vehicle journeys.
-
 #### Providing additional detail about services
 Future releases will extract additional data from timetables xml files in order to provide further detail on services; for example details regarding the days of operation and exceptions around bank holidays, as well as more detailed route information including distance between stops, in addition to time.
 

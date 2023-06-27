@@ -195,7 +195,7 @@ Timetable data can be extracted at 3 levels (note that these examples are restri
 
 * Stop level - Stop level data in the form of a traditional timetable (1 timetable from each xml file)
 
-<img width="1362" alt="image" src="https://user-images.githubusercontent.com/81578708/189094683-ce047d25-051c-470e-be8e-70e6b5d47eab.png">
+<img width="1362" alt="image" src="[https://user-images.githubusercontent.com/81578708/189094683-ce047d25-051c-470e-be8e-70e6b5d47eab.png](https://github.com/department-for-transport-BODS/bods-data-extractor/assets/114913914/19dd50f4-176c-435d-9249-7bfdf1ed89ac)">
 
 ### Fundamentals of extracting data using this package
 

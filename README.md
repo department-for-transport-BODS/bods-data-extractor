@@ -276,7 +276,7 @@ my_bus_data_object.save_service_line_extract_to_csv()
 my_bus_data_object.save_timetables()
 
 #visualise a particular service line on an interactive map
-my_bus_data_object.visualise_service_line('PC0001838:41')
+#my_bus_data_object.visualise_service_line('PC0001838:41')
 
 ```
 ### Expected run times and performance

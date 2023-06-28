@@ -15,7 +15,7 @@ except:
 import os
 
 #retrieve api key from environment variables
-api = os.environ.get('api_key')
+api = os.environ.get('BODS_API_KEY')
 
 #-------------------------------------------
 #            FINE TUNED RESULTS
@@ -23,9 +23,11 @@ api = os.environ.get('api_key')
 #intiate an object instance called my_bus_data_object with desired parameters 
 
 my_bus_data_object = TimetableExtractor(api_key=api
+                                 ,limit=0
+                                 ,offset=0
                                  ,status = 'published' 
                                  ,service_line_level=True 
-                                 ,stop_level=True 
+                                 ,stop_level=True
                                  ,nocs=['BPTR','RBTS']
                                  ,bods_compliant=True
                                  )
@@ -42,14 +44,11 @@ filtered_service_line_level = my_bus_data_object.service_line_extract
 #save the extracted service line level data to lcoal csv file
 my_bus_data_object.save_service_line_extract_to_csv()
 
-#save the extracted stop level data to stop_level variable
-stop_level = my_bus_data_object.timetable_dict
-
-#stop_level variable is a dictionary of dataframes, which can be saved to csv as follows (saves in downloads folder)
-my_bus_data_object.save_all_timetables_to_csv()
+#stop_level_extract is a dataframe, which contains a collumn of timetables (inbound/outbound) to be saved to csv as follows (saves in project folder)
+my_bus_data_object.save_timetables()
 
 #visualise a particular service line on an interactive map
-my_bus_data_object.visualise_service_line('PB0001746:3')
+#my_bus_data_object.visualise_service_line('PB0001746:3')
 
 
 #-------------------------------------------
@@ -70,4 +69,5 @@ red_dq = my_bus_data_object.red_dq_scores() #returns the number of operators in 
 less_than_10 = my_bus_data_object.dq_less_than_x(90) # takes an integer as input (in this case 10) and returns a list of operators with a data quality score less than that integer
 
 no_lic_no = my_bus_data_object.no_licence_no() # returns a report listing which datasets contain files which do not have a licence number
+
 

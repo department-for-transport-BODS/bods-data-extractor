@@ -178,7 +178,7 @@ TimetableExtractor.metadata
 TimetableExtractor.service_line_extract
 
 #Stop Level
-TimetableExtractor.timetable_dict
+TimetableExtractor.stop_level_extract
 ```
 
 ### Example of timetables output
@@ -195,7 +195,8 @@ Timetable data can be extracted at 3 levels (note that these examples are restri
 
 * Stop level - Stop level data in the form of a traditional timetable (1 timetable from each xml file)
 
-<img width="1362" alt="image" src="https://user-images.githubusercontent.com/81578708/189094683-ce047d25-051c-470e-be8e-70e6b5d47eab.png">
+![image](https://github.com/department-for-transport-BODS/bods-data-extractor/assets/114913914/fad1be30-01da-4373-8f63-ed11b3994e5e)
+
 
 ### Fundamentals of extracting data using this package
 
@@ -259,25 +260,23 @@ my_bus_data_object = TimetableExtractor(api_key=api # Your API Key Here
                                  ,stop_level=True # True if you require stop level data
                                  )
 
-#save the extracted stop level data to stop_level variable
-stop_level = my_bus_data_object.timetable_dict
+#save the extracted dataset level data to filtered_dataset_level variable
+filtered_dataset_level = my_bus_data_object.metadata
 
-#note that in downloading stop level the  data, the dataset and service line level will also be downloaded. Can access this as below:
-dataset_level = my_bus_data_object.metadata
-service_line_level = my_bus_data_object.service_line_extract
-
-#save metadata and service line level data to csv file in your downloads directory
+#save the extracted dataset level data to lcoal csv file
 my_bus_data_object.save_metadata_to_csv()
+
+#save the extracted service line level data to dataset_level variable
+filtered_service_line_level = my_bus_data_object.service_line_extract
+
+#save the extracted service line level data to lcoal csv file
 my_bus_data_object.save_service_line_extract_to_csv()
 
-#stop_level variable is a dictionary of dataframes, which can be saved to csv as follows (saves in downloads directory)
-my_bus_data_object.save_all_timetables_to_csv()
-
-#or can filter to filter timetable results to a specfic licence number of service code (saves in downloads directory)
-my_bus_data_object.save_filtered_timetables_to_csv('PC0001838:41')
+#stop_level_extract is a dataframe, which contains a collumn of timetables (inbound/outbound) to be saved to csv as follows (saves in project folder)
+my_bus_data_object.save_timetables()
 
 #visualise a particular service line on an interactive map
-my_bus_data_object.visualise_service_line('PC0001838:41')
+#my_bus_data_object.visualise_service_line('PC0001838:41')
 
 ```
 ### Expected run times and performance
@@ -305,6 +304,7 @@ As well as specifying the granularity of data to extract (dataset, service line 
 - search -  _accepts string input of key-words to filter for the data set name, data set description, organisation name, or admin name e.g. 'Arriva'_
 - bods_compliant - _accepts boolean input (True or False), where True filters for only BODS Compliant datasets. Default value is True_
 - atco_code - _accepts list input of the first three characters of ATCO codes (ATCO codes are unique identifiers of UK bus stops, where first three characters signify the admin area they are within). This filters datasets and/or service lines that have stops within the specified admin areas. e.g. ['320','450']_
+- limit - _accepts an integer value which specifies the amount of datasets will be downloaded. For example, if there were 5 datasets present and the limit was set to 5, all datasets would be downloaded. Comparitively, if the limit was set to 1 , only 1 dataset of the 5 will be downloaded._
 
 Example of this:
 ```python
@@ -441,9 +441,6 @@ As the first release of this project, the focus was on getting analytical ready 
 
 #### Handling non standard files
 Whilst all BODS compliant files meet a certain set of standards, there is still variation in exactly how timetables xml files can be populated. This pacakge currently handles files that meet the most common structure, and a number of notable exceptions, however there are some files that stop level timetables will not be generated for. It will, however, generate dataset level and service line level data for all published files. Future releases will aim to close this gap so timetables can be generated for most, if not all files.
-
-#### Handling vehicle journeys that cross midnight
-As the PTI standards dictate, sequence number logic is different for services that have stop times which cross midnight. This currently results in the stop level timetable output having vehicle journeys that do not start at sequence number 1. Future releases will include logic that better handles this to provide a more uniform output for such vehicle journeys.
 
 #### Providing additional detail about services
 Future releases will extract additional data from timetables xml files in order to provide further detail on services; for example details regarding the days of operation and exceptions around bank holidays, as well as more detailed route information including distance between stops, in addition to time.

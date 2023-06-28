@@ -27,7 +27,7 @@ import pandas as pd
 from dacite import from_dict
 import xmltodict
 import datetime
-from classes import *
+from BODSDataExtractor.classes import *
 
 
 class TimetableExtractor:

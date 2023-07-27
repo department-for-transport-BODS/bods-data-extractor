@@ -13,7 +13,6 @@ from pathlib import Path
 from sys import platform
 import re
 import concurrent.futures
-
 try:
     import BODSDataExtractor.otc_db_download as otc_db_download
 except:
@@ -27,7 +26,7 @@ import pandas as pd
 from dacite import from_dict
 import xmltodict
 import datetime
-from classes import *
+from BODSDataExtractor.classes import *
 
 
 class TimetableExtractor:
@@ -541,7 +540,7 @@ class TimetableExtractor:
             k = k.replace(':', '_')
             v.to_csv(f'{destination}/{k}_timetable.csv', index=False)
 
-    def save_dataframe_to_csv(self,dataframe, column_name, folder_path):
+    def save_dataframe_to_csv(self, dataframe,direction, column_name, folder_path):
         '''
         Create the name of the timetable file and save the timetable to the project folder in the specified folders "outbound_timetable_folder" and "inbound_timetable_folder"
         '''
@@ -565,13 +564,13 @@ class TimetableExtractor:
             ServiceCode = ServiceCode.replace(":", ";")
 
             #Shorten the filename if it exceeds 80 characters
-            if len(Filename)>80:
-                Filename=Filename[:77]
-            else:
-                pass
+            #if len(Filename)>80:
+              #  Filename=Filename[:77]
+           # else:
+              #  pass
 
             #Create the name of the timetable file
-            timetable_file= ServiceCode+"-"+LineName+"_"+OperatingDays+"_"+"RN-"+RevisionNumber+"-"+Filename
+            timetable_file= direction+"_"+ ServiceCode+"-"+LineName+"_"+OperatingDays+"_"+"RN-"+RevisionNumber+"-"+Filename
 
             #If the dataframe is empty, continue
             if df.empty:
@@ -591,8 +590,8 @@ class TimetableExtractor:
         '''
 
         df = self.stop_level_extract
-        self.save_dataframe_to_csv(df, 'collated_timetable_outbound', 'outbound_timetable_folder')
-        self.save_dataframe_to_csv(df, 'collated_timetable_inbound', 'inbound_timetable_folder')
+        self.save_dataframe_to_csv(df,"out", 'collated_timetable_outbound', 'outbound_timetable_folder')
+        self.save_dataframe_to_csv(df,"in", 'collated_timetable_inbound', 'inbound_timetable_folder')
 
 
     def save_filtered_timetables_to_csv(self, service_code):

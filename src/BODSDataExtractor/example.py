@@ -7,10 +7,10 @@
 # All that is needed is to enter your api key in the variable 'api', and run the code!
 # =============================================================================
 
-try:
-  from BODSDataExtractor.extractor import TimetableExtractor
-except:
-  from extractor import TimetableExtractor
+# try:
+#   from BODSDataExtractor.extractor import TimetableExtractor
+# except:
+from extractor import TimetableExtractor
   
 import os
 
@@ -23,7 +23,7 @@ api = os.environ.get('BODS_API_KEY')
 #intiate an object instance called my_bus_data_object with desired parameters 
 
 my_bus_data_object = TimetableExtractor(api_key=api
-                                 ,limit=0
+                                 ,limit=100
                                  ,offset=0
                                  ,status = 'published' 
                                  ,service_line_level=True 
@@ -35,13 +35,13 @@ my_bus_data_object = TimetableExtractor(api_key=api
 #save the extracted dataset level data to filtered_dataset_level variable
 filtered_dataset_level = my_bus_data_object.metadata
 
-#save the extracted dataset level data to lcoal csv file
+#save the extracted dataset level data to local csv file
 my_bus_data_object.save_metadata_to_csv()
 
 #save the extracted service line level data to dataset_level variable
 filtered_service_line_level = my_bus_data_object.service_line_extract
 
-#save the extracted service line level data to lcoal csv file
+#save the extracted service line level data to local csv file
 my_bus_data_object.save_service_line_extract_to_csv()
 
 #stop_level_extract is a dataframe, which contains a collumn of timetables (inbound/outbound) to be saved to csv as follows (saves in project folder)
@@ -50,6 +50,7 @@ my_bus_data_object.save_timetables()
 #visualise a particular service line on an interactive map
 #my_bus_data_object.visualise_service_line('PB0001746:3')
 
+my_bus_data_object.remove_invalid_files_from_service_line_extract(0)
 
 #-------------------------------------------
 #       REPORTING / ANALYTICS

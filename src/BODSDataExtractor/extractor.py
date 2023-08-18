@@ -13,8 +13,7 @@ from pathlib import Path
 from sys import platform
 import re
 import concurrent.futures
-
-from BODSDataExtractor.highest_revision_valid_files import add_days_group_column, add_file_validity_for_each_date, create_calendar_dataframe, refactor_operating_period
+import highest_revision_logic
 
 
 try:
@@ -666,26 +665,31 @@ class TimetableExtractor:
         print('\nTimetable visualised in browser!')
         return fig.show()
 
-    def remove_invalid_files_from_service_line_extract(self, dataframe):
-        self.analytical_timetable_data_analysis()
-        analytical_timetable_data_without_duplicates = self.service_line_extract
-        timetable_df = analytical_timetable_data_without_duplicates[['DatasetID', 'OperatorName', 'FileName', 'TradingName',
-                                                                    'ServiceCode', 'LineName', 'OperatingPeriodStartDate',
-                                                                    'OperatingPeriodEndDate', 'RevisionNumber',
-                                                                    'OperatingDays']]
+    def remove_invalid_files_from_service_line_extract(self, days_lookahead: int = 0):
+        deduplicated_timetable_df = self.service_line_extract
+        timetable_df = deduplicated_timetable_df[['DatasetID', 'OperatorName', 'FileName', 'TradingName',
+                                                'ServiceCode', 'LineName', 'OperatingPeriodStartDate',
+                                                'OperatingPeriodEndDate', 'RevisionNumber', 'OperatingDays']]
 
-        calendar_dataframe = create_calendar_dataframe(timetable_df,0)
-        calendar_dataframe_refactored = refactor_operating_period(calendar_dataframe)
-        calendar_with_days_group = add_days_group_column(calendar_dataframe_refactored)
+        df_with_date_columns = highest_revision_logic.append_date_columns_to_dataframe(timetable_df, days_lookahead)
+        calendar_df = highest_revision_logic.assign_timetable_file_validity_for_each_date(df_with_date_columns, days_lookahead)
+        calendar_dataframe_refactored = highest_revision_logic.refactor_operating_period(calendar_df)
+        calendar_with_days_group = highest_revision_logic.add_days_group_column(calendar_dataframe_refactored)
 
         columns = []
         for date in timetable_df.columns:
             columns.append(date)
         dates = columns[11:]
 
-        operator_df, report_df = add_file_validity_for_each_date(calendar_with_days_group,dates)
+        operator_df, _ = highest_revision_logic.add_file_validity_for_each_date(calendar_with_days_group,dates)
+        indexes_to_delete = highest_revision_logic.collect_index_numbers_to_delete(operator_df)
+        service_line_extract_with_invalid_files_removed = highest_revision_logic.remove_invalid_files(self.service_line_extract, indexes_to_delete)
 
-        # to be continued
+        # For testing
+        service_line_extract_with_invalid_files_removed.to_csv('amended_service_line_extract{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")),index=False)
+        
+        return service_line_extract_with_invalid_files_removed
+
     # =============================================================================
     #       REPORTING FUNCTIONS
     # =============================================================================

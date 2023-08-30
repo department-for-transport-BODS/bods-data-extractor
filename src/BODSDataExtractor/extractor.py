@@ -37,7 +37,7 @@ class TimetableExtractor:
 
     def __init__(self, api_key, limit=10_000, offset=0, nocs=None, status='published',
                  search=None, bods_compliant=True, atco_code=None, service_line_level=False,
-                 stop_level=False, threaded=False):
+                 stop_level=False, threaded=False, current_valid_files_only=False):
         self.api_key = api_key
         self.limit = limit
         self.offset = offset
@@ -49,6 +49,8 @@ class TimetableExtractor:
         self.service_line_level = service_line_level
         self.stop_level = stop_level
         self.threaded = threaded
+        self.indexes_to_delete = []
+        self.current_valid_files_only = current_valid_files_only
 
         self.pull_timetable_data()
 
@@ -60,6 +62,10 @@ class TimetableExtractor:
         if service_line_level or stop_level:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
+
+        if current_valid_files_only:
+            self.service_line_extract = self.remove_invalid_files_from_service_line_extract(0)
+            self.service_line_extract_with_stop_level_json = self.remove_invalid_files_from_service_line_extract_with_stop_level_json()
 
         if stop_level:
             self.generate_timetable()
@@ -682,13 +688,16 @@ class TimetableExtractor:
         dates = columns[11:]
 
         operator_df, _ = highest_revision_logic.add_file_validity_for_each_date(calendar_with_days_group,dates)
-        indexes_to_delete = highest_revision_logic.collect_index_numbers_to_delete(operator_df)
-        service_line_extract_with_invalid_files_removed = highest_revision_logic.remove_invalid_files(self.service_line_extract, indexes_to_delete)
-
-        # For testing
-        service_line_extract_with_invalid_files_removed.to_csv('amended_service_line_extract{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")),index=False)
+        self.indexes_to_delete = highest_revision_logic.collect_index_numbers_to_delete(operator_df)
+        service_line_extract_with_invalid_files_removed = highest_revision_logic.remove_invalid_files(self.service_line_extract, self.indexes_to_delete)
+        self.service_line_extract = service_line_extract_with_invalid_files_removed
         
-        return service_line_extract_with_invalid_files_removed
+        return self.service_line_extract
+    
+    def remove_invalid_files_from_service_line_extract_with_stop_level_json(self):
+        service_line_extract_with_stop_level_json_invalid_files_removed = highest_revision_logic.remove_invalid_files(self.service_line_extract_with_stop_level_json, self.indexes_to_delete)
+
+        return service_line_extract_with_stop_level_json_invalid_files_removed
 
     # =============================================================================
     #       REPORTING FUNCTIONS

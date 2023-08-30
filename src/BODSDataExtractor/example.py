@@ -30,6 +30,7 @@ my_bus_data_object = TimetableExtractor(api_key=api
                                  ,stop_level=True
                                  ,nocs=['BPTR','RBTS']
                                  ,bods_compliant=True
+                                 ,current_valid_files_only=False
                                  )
 
 #save the extracted dataset level data to filtered_dataset_level variable
@@ -49,8 +50,6 @@ my_bus_data_object.save_timetables()
 
 #visualise a particular service line on an interactive map
 #my_bus_data_object.visualise_service_line('PB0001746:3')
-
-my_bus_data_object.remove_invalid_files_from_service_line_extract(0)
 
 #-------------------------------------------
 #       REPORTING / ANALYTICS

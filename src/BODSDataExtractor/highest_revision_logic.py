@@ -176,7 +176,7 @@ def add_file_validity_for_each_date(dataframe, dates):
                     # if the index of the row is less than the index of the row with the greater revision number
                     # for only 'True' rows, then set this value to empty
                     if index < true_rows_max_revision_number_index:
-                        operator_df.loc[index, col] = ''
+                        operator_df.loc[index, col] = np.nan
                     # if the revision number of the row is equal to the greatest revision number of the 'True' rows
                     # then there are multiple valid files for the specified date
                     if (operator_df.loc[index, 'RevisionNumber'] == str(true_rows_max_revision_number)) & \

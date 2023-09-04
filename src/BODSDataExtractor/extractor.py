@@ -70,6 +70,16 @@ class TimetableExtractor:
         if stop_level:
             self.generate_timetable()
 
+    @property
+    def service_line_extract(self):
+        return self._service_line_extract
+    
+    @service_line_extract.setter
+    def service_line_extract(self, new_service_line_extract):
+        if new_service_line_extract.empty:
+            raise SystemExit("\nAborting execution. The service_line_extract dataframe is empty, this is because there are no valid files for today's date for the slice of data you have queried. To rectify this, set current_valid_files_only=False. Alternatively, consider changing your input parameters, e.g. change 'nocs' or increase 'limit'.")
+        self._service_line_extract = new_service_line_extract
+
     def create_metadata_df(self, timetable_api_response):
         """Converts BODS Timetable API results into a Pandas dataframe."""
         df = pd.DataFrame([vars(t_dataset) for t_dataset in timetable_api_response.results])

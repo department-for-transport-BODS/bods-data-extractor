@@ -133,7 +133,7 @@ def add_file_validity_for_each_date(dataframe, dates):
     """
     This function groups by the ServiceCode, LineName and DaysGroups and iterates through each date column to check
     if the files are valid. If they are valid the row will be given a value of True. If they are not valid they will
-    be given no value (empty).
+    be given no value (null).
 
     Parameters:
         dataframe (df): dataframe with calendar dates (including service code, line name and days group)

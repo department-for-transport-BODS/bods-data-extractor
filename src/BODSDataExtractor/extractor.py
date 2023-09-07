@@ -13,7 +13,7 @@ from pathlib import Path
 from sys import platform
 import re
 import concurrent.futures
-import highest_revision_logic
+import current_valid_files_logic
 
 
 try:
@@ -682,30 +682,36 @@ class TimetableExtractor:
         return fig.show()
 
     def remove_invalid_files_from_service_line_extract(self, days_lookahead: int = 0):
+        ''' 
+        Removes files that are not valid for the current date from the service_line_extract.
+        '''
         deduplicated_timetable_df = self.service_line_extract
         timetable_df = deduplicated_timetable_df[['DatasetID', 'OperatorName', 'FileName', 'TradingName',
                                                 'ServiceCode', 'LineName', 'OperatingPeriodStartDate',
                                                 'OperatingPeriodEndDate', 'RevisionNumber', 'OperatingDays']]
 
-        df_with_date_columns = highest_revision_logic.append_date_columns_to_dataframe(timetable_df, days_lookahead)
-        calendar_df = highest_revision_logic.assign_timetable_file_validity_for_each_date(df_with_date_columns, days_lookahead)
-        calendar_dataframe_refactored = highest_revision_logic.refactor_operating_period(calendar_df)
-        calendar_with_days_group = highest_revision_logic.add_days_group_column(calendar_dataframe_refactored)
+        df_with_date_columns = current_valid_files_logic.append_date_columns_to_dataframe(timetable_df, days_lookahead)
+        calendar_df = current_valid_files_logic.assign_timetable_file_validity_for_each_date(df_with_date_columns, days_lookahead)
+        calendar_dataframe_refactored = current_valid_files_logic.refactor_operating_period(calendar_df)
+        calendar_with_days_group = current_valid_files_logic.add_days_group_column(calendar_dataframe_refactored)
 
         columns = []
         for date in timetable_df.columns:
             columns.append(date)
         dates = columns[11:]
 
-        operator_df, _ = highest_revision_logic.add_file_validity_for_each_date(calendar_with_days_group,dates)
-        self.indexes_to_delete = highest_revision_logic.collect_index_numbers_to_delete(operator_df)
-        service_line_extract_with_invalid_files_removed = highest_revision_logic.remove_invalid_files(self.service_line_extract, self.indexes_to_delete)
+        operator_df, _ = current_valid_files_logic.add_file_validity_for_each_date(calendar_with_days_group,dates)
+        self.indexes_to_delete = current_valid_files_logic.collect_index_numbers_to_delete(operator_df)
+        service_line_extract_with_invalid_files_removed = current_valid_files_logic.remove_invalid_files(self.service_line_extract, self.indexes_to_delete)
         self.service_line_extract = service_line_extract_with_invalid_files_removed
         
         return self.service_line_extract
     
     def remove_invalid_files_from_service_line_extract_with_stop_level_json(self):
-        service_line_extract_with_stop_level_json_invalid_files_removed = highest_revision_logic.remove_invalid_files(self.service_line_extract_with_stop_level_json, self.indexes_to_delete)
+        ''' 
+        Removes files that are not valid for the current date from the service_line_extract_with_stop_level_json.
+        '''
+        service_line_extract_with_stop_level_json_invalid_files_removed = current_valid_files_logic.remove_invalid_files(self.service_line_extract_with_stop_level_json, self.indexes_to_delete)
 
         return service_line_extract_with_stop_level_json_invalid_files_removed
 

@@ -7,11 +7,7 @@
 # All that is needed is to enter your api key in the variable 'api', and run the code!
 # =============================================================================
 
-# try:
-#   from BODSDataExtractor.extractor import TimetableExtractor
-# except:
-from extractor import TimetableExtractor
-  
+from BODSDataExtractor.extractor import TimetableExtractor
 import os
 
 #retrieve api key from environment variables
@@ -20,14 +16,14 @@ api = os.environ.get('BODS_API_KEY')
 #-------------------------------------------
 #            FINE TUNED RESULTS
 #-------------------------------------------
-#intiate an object instance called my_bus_data_object with desired parameters 
+#intiate an object instance called my_bus_data_object with desired parameters
 
 my_bus_data_object = TimetableExtractor(api_key=api
-                                 ,limit=100
+                                 ,limit=1#00
                                  ,offset=0
-                                 ,status = 'published' 
-                                 ,service_line_level=True 
-                                 ,stop_level=True
+                                 ,status = 'published'
+                                 ,service_line_level=True
+                                 ,stop_level=False
                                  ,nocs=['BPTR','RBTS']
                                  ,bods_compliant=True
                                  ,current_valid_files_only=False
@@ -48,8 +44,6 @@ my_bus_data_object.save_service_line_extract_to_csv()
 #stop_level_extract is a dataframe, which contains a collumn of timetables (inbound/outbound) to be saved to csv as follows (saves in project folder)
 my_bus_data_object.save_timetables()
 
-#visualise a particular service line on an interactive map
-#my_bus_data_object.visualise_service_line('PB0001746:3')
 
 #-------------------------------------------
 #       REPORTING / ANALYTICS

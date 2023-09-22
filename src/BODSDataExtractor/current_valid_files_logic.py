@@ -10,11 +10,10 @@ def append_date_columns_to_dataframe(dataframe, days_lookahead: int):
     current_date = pd.to_datetime('today').normalize()
     expected_final_published_date = current_date + pd.Timedelta(days=days_lookahead)
 
-    df_with_date_columns = dataframe
+    df_with_date_columns = dataframe.copy()
     delta = dt.timedelta(days=1)
     while current_date <= expected_final_published_date:
         df_with_date_columns[current_date] = None
-        print(current_date, end='\n')
         current_date += delta
 
     df_with_date_columns['OperatingPeriodStartDate'] = pd.to_datetime(df_with_date_columns['OperatingPeriodStartDate'])
@@ -27,23 +26,30 @@ def assign_timetable_file_validity_for_each_date(df_with_date_columns, days_look
     """
     This function iterates through the rows and columns, assigning a "True" value if the file is valid for that date.
     """
+
+    # TODO dynamic detection of first calendar day column
     LOWER_RANGE = 11
     UPPER_RANGE = LOWER_RANGE + 1 + days_lookahead
+    
+    calendar_df = df_with_date_columns.copy()
 
     for calendar_date in range(LOWER_RANGE, UPPER_RANGE): 
-        for row in df_with_date_columns.itertuples():
-            print(df_with_date_columns.columns[calendar_date])
-            print(getattr(row, 'OperatingPeriodStartDate'))
-            if (getattr(row, 'OperatingPeriodEndDate') is pd.NaT) or (getattr(row, 'OperatingPeriodEndDate') is None):
-                print(df_with_date_columns.columns[calendar_date])
-                print(getattr(row, 'OperatingPeriodStartDate'))
-                if df_with_date_columns.columns[calendar_date] >= getattr(row, 'OperatingPeriodStartDate'):
-                    df_with_date_columns[df_with_date_columns.columns[calendar_date]][getattr(row, 'Index')] = "True"
-            elif (df_with_date_columns.columns[calendar_date] >= getattr(row, 'OperatingPeriodStartDate')) and \
-                    (df_with_date_columns.columns[calendar_date] <= getattr(row, 'OperatingPeriodEndDate')):
-                df_with_date_columns[df_with_date_columns.columns[calendar_date]][getattr(row, 'Index')] = "True"
+        for row in calendar_df.itertuples():
 
-    return df_with_date_columns
+            # if the operating period end date for this row is none
+            if (getattr(row, 'OperatingPeriodEndDate') is pd.NaT) or (getattr(row, 'OperatingPeriodEndDate') is None):
+
+                # and if the calendar date is after the start date
+                if calendar_df.columns[calendar_date] >= getattr(row, 'OperatingPeriodStartDate'):
+
+                    #set validity to True
+                    calendar_df.iloc[getattr(row, 'Index'),calendar_df.columns.get_loc(calendar_df.columns[calendar_date])] = 'True'
+
+            # otherwise if calendar date is before or equal to the end date and after start date, set to True validity
+            elif (calendar_df.columns[calendar_date] >= getattr(row, 'OperatingPeriodStartDate')) and (calendar_df.columns[calendar_date] <= getattr(row, 'OperatingPeriodEndDate')):
+                calendar_df.iloc[getattr(row, 'Index'), calendar_df.columns.get_loc(calendar_df.columns[calendar_date])] = 'True'
+
+    return calendar_df
 
 def refactor_operating_period(dataframe):
     """

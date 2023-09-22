@@ -14,12 +14,7 @@ from sys import platform
 import re
 import concurrent.futures
 import current_valid_files_logic
-
-
-try:
-    import BODSDataExtractor.otc_db_download as otc_db_download
-except:
-    import otc_db_download
+import BODSDataExtractor.otc_db_download as otc_db_download
 from datetime import date
 from collections import Counter
 import importlib.resources

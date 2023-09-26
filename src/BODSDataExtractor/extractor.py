@@ -13,11 +13,8 @@ from pathlib import Path
 from sys import platform
 import re
 import concurrent.futures
-
-try:
-    import BODSDataExtractor.otc_db_download as otc_db_download
-except:
-    import otc_db_download
+import current_valid_files_logic
+import BODSDataExtractor.otc_db_download as otc_db_download
 from datetime import date
 from collections import Counter
 import importlib.resources
@@ -35,7 +32,7 @@ class TimetableExtractor:
 
     def __init__(self, api_key, limit=10_000, offset=0, nocs=None, status='published',
                  search=None, bods_compliant=True, atco_code=None, service_line_level=False,
-                 stop_level=False, threaded=False):
+                 stop_level=False, threaded=False, current_valid_files_only=False):
         self.api_key = api_key
         self.limit = limit
         self.offset = offset
@@ -47,6 +44,8 @@ class TimetableExtractor:
         self.service_line_level = service_line_level
         self.stop_level = stop_level
         self.threaded = threaded
+        self.indexes_to_delete = []
+        self.current_valid_files_only = current_valid_files_only
 
         self.pull_timetable_data()
 
@@ -59,8 +58,22 @@ class TimetableExtractor:
             self.analytical_timetable_data()
             self.analytical_timetable_data_analysis()
 
+        if current_valid_files_only:
+            self.service_line_extract = self.remove_invalid_files_from_service_line_extract(0)
+            self.service_line_extract_with_stop_level_json = self.remove_invalid_files_from_service_line_extract_with_stop_level_json()
+
         if stop_level:
             self.generate_timetable()
+
+    @property
+    def service_line_extract(self):
+        return self._service_line_extract
+    
+    @service_line_extract.setter
+    def service_line_extract(self, new_service_line_extract):
+        if new_service_line_extract.empty:
+            raise SystemExit("\nAborting execution. The service_line_extract dataframe is empty, this is because there are no valid files for today's date for the slice of data you have queried. To rectify this, set current_valid_files_only=False. Alternatively, consider changing your input parameters, e.g. change 'nocs' or increase 'limit'.")
+        self._service_line_extract = new_service_line_extract
 
     def create_metadata_df(self, timetable_api_response):
         """Converts BODS Timetable API results into a Pandas dataframe."""
@@ -374,7 +387,7 @@ class TimetableExtractor:
             self.service_line_extract_with_stop_level_json = self.service_line_extract_with_stop_level_json[
                 self.service_line_extract_with_stop_level_json['la_code'].isin(self.atco_code)]
 
-    def analytical_timetable_data_analysis(self):
+    def analytical_timetable_data_analysis(self) -> None:
         """Returns a copy of the service line level data suitable for analysis. Omits the columns with jsons
         of the final stop level data required for further processing and stop level analysis, for
         performance and storage sake. Also omits la_code column, as if user is not interested in
@@ -662,6 +675,40 @@ class TimetableExtractor:
 
         print('\nTimetable visualised in browser!')
         return fig.show()
+
+    def remove_invalid_files_from_service_line_extract(self, days_lookahead: int = 0):
+        ''' 
+        Removes files that are not valid for the current date from the service_line_extract.
+        '''
+        deduplicated_timetable_df = self.service_line_extract
+        timetable_df = deduplicated_timetable_df[['DatasetID', 'OperatorName', 'FileName', 'TradingName',
+                                                'ServiceCode', 'LineName', 'OperatingPeriodStartDate',
+                                                'OperatingPeriodEndDate', 'RevisionNumber', 'OperatingDays']]
+
+        df_with_date_columns = current_valid_files_logic.append_date_columns_to_dataframe(timetable_df, days_lookahead)
+        calendar_df = current_valid_files_logic.assign_timetable_file_validity_for_each_date(df_with_date_columns, days_lookahead)
+        calendar_dataframe_refactored = current_valid_files_logic.refactor_operating_period(calendar_df)
+        calendar_with_days_group = current_valid_files_logic.add_days_group_column(calendar_dataframe_refactored)
+
+        columns = []
+        for date in timetable_df.columns:
+            columns.append(date)
+        dates = columns[11:]
+
+        operator_df, _ = current_valid_files_logic.add_file_validity_for_each_date(calendar_with_days_group,dates)
+        self.indexes_to_delete = current_valid_files_logic.collect_index_numbers_to_delete(operator_df)
+        service_line_extract_with_invalid_files_removed = current_valid_files_logic.remove_invalid_files(self.service_line_extract, self.indexes_to_delete)
+        self.service_line_extract = service_line_extract_with_invalid_files_removed
+        
+        return self.service_line_extract
+    
+    def remove_invalid_files_from_service_line_extract_with_stop_level_json(self):
+        ''' 
+        Removes files that are not valid for the current date from the service_line_extract_with_stop_level_json.
+        '''
+        service_line_extract_with_stop_level_json_invalid_files_removed = current_valid_files_logic.remove_invalid_files(self.service_line_extract_with_stop_level_json, self.indexes_to_delete)
+
+        return service_line_extract_with_stop_level_json_invalid_files_removed
 
     # =============================================================================
     #       REPORTING FUNCTIONS

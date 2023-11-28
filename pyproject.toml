@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "BODSDataExtractor"
-version = "1.1.1"
+version = "1.2.1"
 authors = [
   { name="Ali Partner, Spencer Brittain", email="bodshelpdesk@kpmg.co.uk" }
 ]
@@ -30,6 +30,7 @@ dependencies = [
     ,"shapely>=1.8.5"
     ,"geopandas>=0.12.1"
     ,"plotly<=5.13.1"
+    ,"dacite>=1.8.1"
 ]
 
 [project.urls]

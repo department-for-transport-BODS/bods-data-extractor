@@ -22,6 +22,7 @@ my_bus_data_object = TimetableExtractor(api_key=api
                                         , status='published'
                                         , service_line_level=True
                                         , stop_level=False
+                                        , bods_compliant=True
                                         )
 
 # Returns a copy of the service line level data suitable for analysis and filters columns
@@ -29,11 +30,11 @@ analytical_timetable_data_without_duplicates = my_bus_data_object.analytical_tim
 timetable_df = analytical_timetable_data_without_duplicates[['DatasetID', 'OperatorName', 'FileName', 'TradingName',
                                                              'ServiceCode', 'LineName', 'OperatingPeriodStartDate',
                                                              'OperatingPeriodEndDate', 'RevisionNumber',
-                                                             'OperatingDays']]
+                                                             'OperatingDays', 'serviced_org_present','days_of_non_operation_present','days_of_operation_present','departure_time']]
 
 
 # for testing
-# calendar_df.to_csv('calendar_df_original_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
+# timetable_df.to_csv('calendar_df_original_{}.csv'.format(pd.to_datetime('today').strftime("%Y-%m-%d %Hh%Mm%Ss")))
 
 
 def produce_calendar_structure(dataframe):
@@ -54,7 +55,7 @@ def produce_calendar_structure(dataframe):
     delta = dt.timedelta(days=1)
     while current_date <= expected_final_published_date:
         calendar_df[current_date] = None
-        print(current_date, end='\n')
+        #print(current_date, end='\n')
         current_date += delta
 
     calendar_df['OperatingPeriodStartDate'] = pd.to_datetime(calendar_df['OperatingPeriodStartDate'])
@@ -62,13 +63,9 @@ def produce_calendar_structure(dataframe):
     calendar_df.reset_index(inplace=True)
 
     # update this to make it generic!
-    for calendar_date in range(11, 54):
+    for calendar_date in range(15, 58):
         for row in calendar_df.itertuples():
-            print(calendar_df.columns[calendar_date])
-            print(getattr(row, 'OperatingPeriodStartDate'))
             if (getattr(row, 'OperatingPeriodEndDate') is pd.NaT) or (getattr(row, 'OperatingPeriodEndDate') is None):
-                print(calendar_df.columns[calendar_date])
-                print(getattr(row, 'OperatingPeriodStartDate'))
                 if calendar_df.columns[calendar_date] >= getattr(row, 'OperatingPeriodStartDate'):
                     calendar_df[calendar_df.columns[calendar_date]][getattr(row, 'Index')] = "True"
             elif (calendar_df.columns[calendar_date] >= getattr(row, 'OperatingPeriodStartDate')) and \
@@ -162,18 +159,23 @@ def check_operating_days(dataframe):
                         operating_days_in_current_index = operating_days_in_current_index.split(",")
                         operating_days_next_index = operating_days_next_index.split(",")
                         if all([item in operating_days_next_index for item in operating_days_in_current_index]):
-                            if (dataframe_with_grouping.loc[next_index, 'DaysGroup'] == "") & (
-                                    dataframe_with_grouping.loc[current_index, 'DaysGroup'] == ""):
-                                dataframe_with_grouping.at[current_index, 'DaysGroup'] = counter
-                                dataframe_with_grouping.at[next_index, 'DaysGroup'] = counter
-                            elif (dataframe_with_grouping.loc[next_index, 'DaysGroup'] == "") & (
-                                    dataframe_with_grouping.loc[current_index, 'DaysGroup'] != ""):
-                                dataframe_with_grouping.at[next_index, 'DaysGroup'] = \
-                                    dataframe_with_grouping.loc[current_index, 'DaysGroup']
-                            else:
-                                dataframe_with_grouping.at[current_index, 'DaysGroup'] = \
-                                    dataframe_with_grouping.loc[next_index, 'DaysGroup']
-                                group.at[current_index, 'DaysGroup'] = group.loc[next_index, 'DaysGroup']
+                            departure_times_in_current_index = group.loc[current_index, 'departure_time']
+                            departure_times_next_index = group.loc[next_index, 'departure_time']
+                            for key in departure_times_in_current_index.keys():
+                                if key in departure_times_next_index.keys():
+                                    if departure_times_in_current_index[key] == departure_times_next_index[key]:
+                                        if (dataframe_with_grouping.loc[next_index, 'DaysGroup'] == "") & (
+                                                dataframe_with_grouping.loc[current_index, 'DaysGroup'] == ""):
+                                            dataframe_with_grouping.at[current_index, 'DaysGroup'] = counter
+                                            dataframe_with_grouping.at[next_index, 'DaysGroup'] = counter
+                                        elif (dataframe_with_grouping.loc[next_index, 'DaysGroup'] == "") & (
+                                                dataframe_with_grouping.loc[current_index, 'DaysGroup'] != ""):
+                                            dataframe_with_grouping.at[next_index, 'DaysGroup'] = \
+                                                dataframe_with_grouping.loc[current_index, 'DaysGroup']
+                                        else:
+                                            dataframe_with_grouping.at[current_index, 'DaysGroup'] = \
+                                                dataframe_with_grouping.loc[next_index, 'DaysGroup']
+                                            group.at[current_index, 'DaysGroup'] = group.loc[next_index, 'DaysGroup']
             if dataframe_with_grouping.loc[current_index, 'DaysGroup'] == "":
                 dataframe_with_grouping.loc[current_index, 'DaysGroup'] = counter
     return dataframe_with_grouping
@@ -188,7 +190,7 @@ calendar_df_grouped = check_operating_days(calendar_df_refactored)
 columns = []
 for date in timetable_df.columns:
     columns.append(date)
-dates = columns[11:]
+dates = columns[15:]
 
 
 def determine_file_validity(dataframe):
@@ -209,10 +211,139 @@ def determine_file_validity(dataframe):
     """
     report_df = pd.DataFrame(
         columns=['LicenseNumber', 'ServiceCode', 'LineName', 'Look_ahead_missing_flag', 'Dates_for_missing_lookahead',
-                 'multiple_valid_files_issue_flag', 'Dates_for_multiple_valid_files', 'OperatingDays', 'DatasetID'])
+                 'multiple_valid_files_issue_flag', 'Dates_for_multiple_valid_files', 'potentially_incorrectly_versioned_files','OperatingDays', 'DatasetID'])
 
     operator_df = dataframe
-    groups = operator_df.groupby(['ServiceCode', 'LineName', 'DaysGroup'])
+    # Initialize the 'potentially_incorrectly_versioned_files' column with a default value (False or NaN)
+    operator_df['potentially_incorrectly_versioned_files'] = False
+    
+    groups1 = operator_df.groupby(['ServiceCode', 'LineName'])
+    for group_key, group in groups1:       
+        group['OperatingPeriodStartDate'] = pd.to_datetime(group['OperatingPeriodStartDate'], format='%d/%m/%Y')
+        group['OperatingPeriodEndDate'] = pd.to_datetime(group['OperatingPeriodEndDate'], format='%d/%m/%Y')       
+        # Convert date columns to datetime format
+        start_date_has_duplicates = group['OperatingPeriodStartDate'].duplicated().any()
+        end_date_has_duplicates = group['OperatingPeriodEndDate'].duplicated().any()
+        
+        print(f"Group: {group_key} - Start Date Duplicates: {start_date_has_duplicates}, End Date Duplicates: {end_date_has_duplicates}")
+
+        if start_date_has_duplicates and end_date_has_duplicates:
+            # Check if there are multiple different RevisionNumbers or OperatingDays within the same validity period
+            revision_check = group['RevisionNumber'].nunique() > 1
+            operating_days_check = group['OperatingDays'].nunique() > 1
+            
+            print(f"Group: {group_key} - Unique RevisionNumbers: {group['RevisionNumber'].nunique()}, Unique OperatingDays: {group['OperatingDays'].nunique()}")
+            
+            # If both conditions are met, flag the rows as True
+            if revision_check and operating_days_check:
+                # Convert OperatingDays into lists for easy comparison
+                group['OperatingDaysList'] = group['OperatingDays'].apply(lambda x: set(x.split(',')))
+                
+                 # Get highest revision number
+                highest_revision_number = group['RevisionNumber'].max()
+                
+                # Combine all days from highest revision rows
+                highest_revision_rows = group[group['RevisionNumber'] == highest_revision_number]
+                combined_highest_revision_days = set().union(*highest_revision_rows['OperatingDaysList'])
+                
+                # highest_revision = group.loc[group['RevisionNumber'].idxmax()]
+                # highest_revision_days = highest_revision['OperatingDaysList']
+                # Use a helper function to compare OperatingDaysList against highest_revision_days
+                def is_incorrectly_versioned(row):
+                    return not row['OperatingDaysList'].issubset(combined_highest_revision_days)
+                
+                # Apply only to rows with lower revisions
+                lower_revision_rows = group[group['RevisionNumber'] < highest_revision_number]
+                incorrect_flags = lower_revision_rows.apply(is_incorrectly_versioned, axis=1)
+                
+                # Apply the helper function to the group
+                #grp_potential = group['OperatingDaysList'].apply(is_incorrectly_versioned)
+                if incorrect_flags.any():
+                    group['potentially_incorrectly_versioned_files'] = True
+                    print(f"Flagging group {group_key} as True in scenario 1")
+                    continue
+                
+            group = group.copy()
+            # Iterate through all pairs in group
+            for idx, row in group.iterrows():
+                for idx2, comp_row in group.iterrows():
+                    if idx == idx2:
+                        continue
+
+                    # Only compare if this row is a lower revision than the other
+                    if row['RevisionNumber'] < comp_row['RevisionNumber']:
+                        row_days = set(row['OperatingDays'].split(','))
+                        comp_days = set(comp_row['OperatingDays'].split(','))
+
+                        # Check if operating days are exactly the same
+                        if row_days == comp_days:
+                            if row['departure_time'] != comp_row['departure_time']:
+                                group['potentially_incorrectly_versioned_files'] = True
+                                print(f"Flagging group {group_key} as True in scenario 2")
+                          
+        # Now, update the original DataFrame with the flagged group
+        operator_df.loc[group.index, 'potentially_incorrectly_versioned_files'] = group['potentially_incorrectly_versioned_files']
+        
+    groups = operator_df.groupby(['ServiceCode', 'LineName', 'RevisionNumber'])
+
+    # Mark duplicates: flag if the group has more than 1 unique OperatingDays or if the group size > 1 with the same OperatingDays
+    def flag_duplicates(group):
+        group['rule2'] = False
+        group['rule4'] = False
+        if len(group) > 1:
+            if group['OperatingPeriodStartDate'].nunique() > 1:
+                group['rule2'] = True
+            if group['OperatingDays'].nunique() == 1:
+                group['rule4'] = True
+        return group
+
+    # Apply the function to each group
+    operator_df = groups.apply(flag_duplicates).reset_index(drop=True)
+    
+    # Rule 1
+    groups_sorted = operator_df.sort_values(by=['ServiceCode', 'LineName', 'OperatingPeriodStartDate'])
+
+    # Compare each row's start date with the previous revision's start date for the same ServiceCode & LineName
+    def flag_invalid_revision(group):
+        group = group.sort_values('RevisionNumber')
+        group['prev_start_date'] = group['OperatingPeriodStartDate'].shift()
+        group['prev_revision'] = group['RevisionNumber'].shift()
+        group['rule1'] = group['OperatingPeriodStartDate'] < group['prev_start_date']
+        return group
+
+    # Apply per ServiceCode + LineName group
+    result_df = groups_sorted.groupby(['ServiceCode', 'LineName'], group_keys=False).apply(flag_invalid_revision)
+    operator_df['rule1'] = result_df['rule1'].fillna(False)
+    
+    #Rule 2
+    groups_sorted = operator_df.sort_values(by=['ServiceCode', 'LineName', 'RevisionNumber', 'OperatingPeriodStartDate'])
+
+    # Step 2: Define a function to flag short term variations
+    def flag_short_term_variation(group):
+        group['rule3'] = False
+        
+        for i in range(1, len(group)):
+            # Check for Short Term Variation (same revision number, no continuation file)
+            prev_row = group.iloc[i - 1]
+            curr_row = group.iloc[i]
+            
+            # 1. Condition for Short Term Variation (If there's a later revision, it should continue after the end date)
+            if prev_row['OperatingPeriodEndDate'] < curr_row['OperatingPeriodStartDate']:
+                if prev_row['RevisionNumber'] == curr_row['RevisionNumber']:
+                    group['rule3'] = True
+            
+            # 2. Condition for End Date Violation (No file should continue beyond the end date for the same revision)
+            if prev_row['OperatingPeriodEndDate'] > curr_row['OperatingPeriodStartDate'] and prev_row['RevisionNumber'] == curr_row['RevisionNumber']:
+                group['rule3'] = True
+
+        return group
+
+    # Step 3: Apply the function to each group (by ServiceCode and LineName)
+    operator_df = groups_sorted.groupby(['ServiceCode', 'LineName'], group_keys=False).apply(flag_short_term_variation)
+
+
+    
+    groups = operator_df.groupby(['ServiceCode', 'LineName','DaysGroup'])
     for name, group in groups:
         # Find the index of the max revision number
         max_revision = group['RevisionNumber'].astype('int').idxmax()
@@ -221,34 +352,37 @@ def determine_file_validity(dataframe):
         issue_dates = []
         multiple_valid_files_issue_flag = False
         dates_for_multiple_valid_files = []
-        # Iterate over the column dates
-        for col in dates:
-            # Get the number of true values in the group
-            num_true = (group[col] == 'True').sum()
-            # Check if any value in the column is True, the group has more than one row and the number of true rows
-            # is greater than one
-            if (group[col].any() == True) & (len(group) > 1) & (num_true > 1):
-                # get the rows where the values are equal to 'True'
-                true_rows = group[group[col] == 'True']
-                # iterate through each row which has a 'True' value
-                for index in true_rows.index:
+        if group['serviced_org_present'].any() == True:
+            pass
+        else:
+            # Iterate over the column dates
+            for col in dates:
+                # Get the number of true values in the group
+                num_true = (group[col] == 'True').sum()
+                # Check if any value in the column is True, the group has more than one row and the number of true rows
+                # is greater than one
+                if (group[col].any() == True) & (len(group) > 1) & (num_true > 1):
+                    # get the rows where the values are equal to 'True'
                     true_rows = group[group[col] == 'True']
-                    true_rows_max_revision_number_index = true_rows['RevisionNumber'].astype('int').idxmax()
-                    true_rows_max_revision_number = true_rows['RevisionNumber'].astype('int').max()
-                    # if the index of the row is less than the index of the row with the greater revision number
-                    # for only 'True' rows, then set this value to empty
-                    if index < true_rows_max_revision_number_index:
-                        operator_df.loc[index, col] = ''
-                    # if the revision number of the row is equal to the greatest revision number of the 'True' rows
-                    # then there are multiple valid files for the specified date
-                    if (operator_df.loc[index, 'RevisionNumber'] == str(true_rows_max_revision_number)) & \
-                            (len(true_rows[true_rows['RevisionNumber'] == str(true_rows_max_revision_number)]) > 1):
-                        multiple_valid_files_issue_flag = True
-                        dates_for_multiple_valid_files.append(col)
-            # Check if all values in the column are False or NaN. If so then the look ahead is missing
-            if (group[col].all() == False) or (group[col].isnull().all()):
-                look_ahead_missing_flag = True
-                issue_dates.append(col)
+                    # iterate through each row which has a 'True' value
+                    for index in true_rows.index:
+                        true_rows = group[group[col] == 'True']
+                        true_rows_max_revision_number_index = true_rows['RevisionNumber'].astype('int').idxmax()
+                        true_rows_max_revision_number = true_rows['RevisionNumber'].astype('int').max()
+                        # if the index of the row is less than the index of the row with the greater revision number
+                        # for only 'True' rows, then set this value to empty
+                        if index < true_rows_max_revision_number_index:
+                            operator_df.loc[index, col] = ''
+                        # if the revision number of the row is equal to the greatest revision number of the 'True' rows
+                        # then there are multiple valid files for the specified date
+                        if (operator_df.loc[index, 'RevisionNumber'] == str(true_rows_max_revision_number)) & \
+                                (len(true_rows[true_rows['RevisionNumber'] == str(true_rows_max_revision_number)]) > 1):
+                                multiple_valid_files_issue_flag = True
+                                dates_for_multiple_valid_files.append(col)
+                # Check if all values in the column are False or NaN. If so then the look ahead is missing
+                if (group[col].all() == False) or (group[col].isnull().all()):
+                    look_ahead_missing_flag = True
+                    issue_dates.append(col) 
         dates_for_multiple_valid_files = np.unique(dates_for_multiple_valid_files)
         datasets = []
         for x in group['DatasetID']:
@@ -261,6 +395,7 @@ def determine_file_validity(dataframe):
              'Dates_for_missing_lookahead': [issue_dates],
              'multiple_valid_files_issue_flag': [multiple_valid_files_issue_flag],
              'Dates_for_multiple_valid_files': [dates_for_multiple_valid_files],
+             'potentially_incorrectly_versioned_files': [group['potentially_incorrectly_versioned_files'].iloc[-1]],
              'OperatingDays': [group['OperatingDays'].iloc[-1]],
              'DatasetID': [datasets]})
         report_df = pd.concat([report_df, temp_df], ignore_index=True)
@@ -291,7 +426,7 @@ def get_valid_file(date_for_file, service_code, line_name, operating_days):
     Returns:
         response: corresponding valid file(s) or 'No valid file' or error if input is incorrect.
     """
-    date_for_file = pd.to_datetime(date_for_file)
+    date_for_file = pd.to_datetime(date_for_file, dayfirst=True)
     try:
         rows_to_check = consumer_df.loc[((consumer_df['ServiceCode'] == service_code) &
                                          (consumer_df['LineName'] == line_name)

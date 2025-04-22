@@ -230,36 +230,39 @@ class TimetableExtractor:
         of each xml file within into a dataframe
 
         """
-
+        output_df = pd.DataFrame()
         output = []
 
         print(f"Fetching zip file from {url} in metadata table...\n")
 
-        response = requests.get(url)
+        try:
 
-        # unizp the zipfile
-        with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
+            response = requests.get(url)
 
-            # loop through files in the zip
-            for zipinfo in thezip.infolist():
+            # unizp the zipfile
+            with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
 
-                extension = zipinfo.filename.split('.')[-1]
+                # loop through files in the zip
+                for zipinfo in thezip.infolist():
 
-                # if the filename has an 'xml' extension
-                if extension == 'xml':
+                    extension = zipinfo.filename.split('.')[-1]
 
-                    xml_output = []
+                    # if the filename has an 'xml' extension
+                    if extension == 'xml':
 
-                    # open each file (assumed to be XML file)
-                    with thezip.open(zipinfo) as thefile:
+                        xml_output = []
 
-                        try:
+                        # open each file (assumed to be XML file)
+                        with thezip.open(zipinfo) as thefile:
 
                             # note the url
                             xml_output.append(url)
 
                             # Creating xml data object
-                            xml_data = xmlDataExtractor(thefile)
+                            try:
+                                xml_data = xmlDataExtractor(thefile)
+                            except:
+                                continue
 
                             # extract data from xml
                             filename = xmlDataExtractor.extract_filename(xml_data)
@@ -312,7 +315,15 @@ class TimetableExtractor:
 
                             la_code = xmlDataExtractor.extract_la_code(xml_data)
                             xml_output.append(la_code)
-
+                            
+                            
+                            serviced_org_present,days_of_non_operation_present,days_of_operation_present = xmlDataExtractor.exract_serviced_organisation_working_days(xml_data)
+                            xml_output.append(serviced_org_present)
+                            xml_output.append(days_of_non_operation_present)
+                            xml_output.append(days_of_operation_present)
+                            
+                            departure_time = xmlDataExtractor.extract_departure_time(xml_data)
+                            xml_output.append(departure_time)
                             # reset read cursor
                             thefile.seek(0)
 
@@ -342,33 +353,34 @@ class TimetableExtractor:
                             else:
                                 pass
 
-                        except:
-                            TimetableExtractor.error_list.append(url)
-
                         output.append(xml_output)
 
-                else:
-                    print(f'file extension in zip folder is {extension}, passing...\n')
-                    pass
+                    else:
+                        print(f'file extension in zip folder is {extension}, passing...\n')
+                        pass
 
-        # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
-        if self.stop_level == True:
-            output_df = pd.DataFrame(output
-                                     , columns=['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber',
-                                                'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName',
-                                                'PublicUse', 'OperatingDays', 'Origin', 'Destination',
-                                                'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
-                                                'RevisionNumber', 'la_code', 'journey_pattern_json',
-                                                'vehicle_journey_json', 'services_json']
-                                     )
-        else:
-            output_df = pd.DataFrame(output
-                                     , columns=['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber',
-                                                'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName',
-                                                'PublicUse', 'OperatingDays', 'Origin', 'Destination',
-                                                'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
-                                                'RevisionNumber', 'la_code']
-                                     )
+            # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
+            if self.stop_level == True:
+                output_df = pd.DataFrame(output
+                                        , columns=['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber',
+                                                    'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName',
+                                                    'PublicUse', 'OperatingDays', 'Origin', 'Destination',
+                                                    'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
+                                                    'RevisionNumber', 'la_code', 'journey_pattern_json',
+                                                    'vehicle_journey_json', 'services_json']
+                                        )
+            else:
+                output_df = pd.DataFrame(output
+                                        , columns=['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber',
+                                                    'OperatorShortName', 'OperatorCode', 'ServiceCode', 'LineName',
+                                                    'PublicUse', 'OperatingDays', 'Origin', 'Destination',
+                                                    'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
+                                                    'RevisionNumber', 'la_code', 'serviced_org_present','days_of_non_operation_present','days_of_operation_present', 'departure_time']
+                                        )
+        except:
+            TimetableExtractor.error_list.append(url)
+            pass
+
         return output_df
 
     def download_extract_xml(self, url):
@@ -376,116 +388,128 @@ class TimetableExtractor:
         """
         Download an xml file and extract its relevant contents into a dataframe
         """
-
+        output_df = pd.DataFrame()
         xml_output = []
-        print(f"Fetching xml file from {url} in metadata table...\n")
+        try:
+            print(f"Fetching xml file from {url} in metadata table...\n")
 
-        resp = requests.get(url)
+            resp = requests.get(url)
 
-        resp.encoding = 'utf-8-sig'
+            resp.encoding = 'utf-8-sig'
 
-        # save the filea as an xml then reopen it to parse, this can and should be optimised
-        with open('temp.xml', 'w', encoding='utf-8') as file:
-            file.write(resp.text)
-            # size = os.path.getsize(r'temp.xml')
+            # save the filea as an xml then reopen it to parse, this can and should be optimised
+            with open('temp.xml', 'w', encoding='utf-8') as file:
+                file.write(resp.text)
+                # size = os.path.getsize(r'temp.xml')
+                
 
-        with open(r'temp.xml', 'r', encoding='utf-8') as xml:
+            with open(r'temp.xml', 'r', encoding='utf-8') as xml:
+                # note the url
+                xml_output.append(url)
 
-            # note the url
-            xml_output.append(url)
+                # create xml data object
+                xml_data = xmlDataExtractor(xml)
 
-            # create xml data object
-            xml_data = xmlDataExtractor(xml)
+                # extract data from xml
+                filename = xmlDataExtractor.extract_filename(xml_data)
+                xml_output.append(filename)
 
-            # extract data from xml
-            filename = xmlDataExtractor.extract_filename(xml_data)
-            xml_output.append(filename)
+                noc = xmlDataExtractor.extract_noc(xml_data)
+                xml_output.append(noc)
 
-            noc = xmlDataExtractor.extract_noc(xml_data)
-            xml_output.append(noc)
+                trading_name = xmlDataExtractor.extract_trading_name(xml_data)
+                xml_output.append(trading_name)
 
-            trading_name = xmlDataExtractor.extract_trading_name(xml_data)
-            xml_output.append(trading_name)
+                licence_number = xmlDataExtractor.extract_licence_number(xml_data)
+                xml_output.append(licence_number)
 
-            licence_number = xmlDataExtractor.extract_licence_number(xml_data)
-            xml_output.append(licence_number)
+                operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
+                xml_output.append(operator_short_name)
 
-            operator_short_name = xmlDataExtractor.extract_operator_short_name(xml_data)
-            xml_output.append(operator_short_name)
+                operator_code = xmlDataExtractor.extract_operator_code(xml_data)
+                xml_output.append(operator_code)
 
-            operator_code = xmlDataExtractor.extract_operator_code(xml_data)
-            xml_output.append(operator_code)
+                service_code = xmlDataExtractor.extract_service_code(xml_data)
+                xml_output.append(service_code)
 
-            service_code = xmlDataExtractor.extract_service_code(xml_data)
-            xml_output.append(service_code)
+                line_name = xmlDataExtractor.extract_line_name(xml_data)
+                xml_output.append(line_name)
 
-            line_name = xmlDataExtractor.extract_line_name(xml_data)
-            xml_output.append(line_name)
+                public_use = xmlDataExtractor.extract_public_use(xml_data)
+                xml_output.append(public_use)
 
-            public_use = xmlDataExtractor.extract_public_use(xml_data)
-            xml_output.append(public_use)
+                operating_days = xmlDataExtractor.extract_operating_days(xml_data)
+                xml_output.append(operating_days)
 
-            operating_days = xmlDataExtractor.extract_operating_days(xml_data)
-            xml_output.append(operating_days)
+                service_origin = xmlDataExtractor.extract_service_origin(xml_data)
+                xml_output.append(service_origin)
 
-            service_origin = xmlDataExtractor.extract_service_origin(xml_data)
-            xml_output.append(service_origin)
+                service_destination = xmlDataExtractor.extract_service_destination(xml_data)
+                xml_output.append(service_destination)
 
-            service_destination = xmlDataExtractor.extract_service_destination(xml_data)
-            xml_output.append(service_destination)
+                operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
+                xml_output.append(operating_period_start_date)
 
-            operating_period_start_date = xmlDataExtractor.extract_operating_period_start_date(xml_data)
-            xml_output.append(operating_period_start_date)
+                operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
+                xml_output.append(operating_period_end_date)
 
-            operating_period_end_date = xmlDataExtractor.extract_operating_period_end_date(xml_data)
-            xml_output.append(operating_period_end_date)
+                schema_version = xmlDataExtractor.extract_schema_version(xml_data)
+                xml_output.append(schema_version)
 
-            schema_version = xmlDataExtractor.extract_schema_version(xml_data)
-            xml_output.append(schema_version)
+                revision_number = xmlDataExtractor.extract_revision_number(xml_data)
+                xml_output.append(revision_number)
 
-            revision_number = xmlDataExtractor.extract_revision_number(xml_data)
-            xml_output.append(revision_number)
+                la_code = xmlDataExtractor.extract_la_code(xml_data)
+                xml_output.append(la_code)
+                
+                serviced_org_present,days_of_non_operation_present,days_of_operation_present = xmlDataExtractor.exract_serviced_organisation_working_days(xml_data)
+                xml_output.append(serviced_org_present)
+                xml_output.append(days_of_non_operation_present)
+                xml_output.append(days_of_operation_present)
+                
+                departure_time = xmlDataExtractor.extract_departure_time(xml_data)
+                xml_output.append(departure_time)
 
-            la_code = xmlDataExtractor.extract_la_code(xml_data)
-            xml_output.append(la_code)
+                # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
+                if self.stop_level == True:
 
-            # if stop level data is requested, then need the additional columns that contain jsons of the stop level info
+                    # =============================================================================
+                    #               also read in xml as a text string
+                    #               this is required for extracting sections of the xml for further stop level extraction, not just elements or attribs
+                    # =============================================================================
+                    xml.seek(0)
+                    xml_text = xml.read()
+                    xml_json = xmltodict.parse(xml_text, process_namespaces=False, force_list=(
+                    'JourneyPatternSection', 'JourneyPatternTimingLink', 'VehicleJourney', 'VehicleJourneyTimingLink'))
+
+                    journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
+                    xml_output.append(journey_pattern_json)
+
+                    vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
+                    xml_output.append(vehicle_journey_json)
+
+                    services_json = xml_json['TransXChange']['Services']['Service']
+                    xml_output.append(services_json)
+
+                else:
+                    pass
+
+            output_df = pd.DataFrame(xml_output).T
+
             if self.stop_level == True:
-
-                # =============================================================================
-                #               also read in xml as a text string
-                #               this is required for extracting sections of the xml for further stop level extraction, not just elements or attribs
-                # =============================================================================
-                xml.seek(0)
-                xml_text = xml.read()
-                xml_json = xmltodict.parse(xml_text, process_namespaces=False, force_list=(
-                'JourneyPatternSection', 'JourneyPatternTimingLink', 'VehicleJourney', 'VehicleJourneyTimingLink'))
-
-                journey_pattern_json = xml_json['TransXChange']['JourneyPatternSections']['JourneyPatternSection']
-                xml_output.append(journey_pattern_json)
-
-                vehicle_journey_json = xml_json['TransXChange']['VehicleJourneys']['VehicleJourney']
-                xml_output.append(vehicle_journey_json)
-
-                services_json = xml_json['TransXChange']['Services']['Service']
-                xml_output.append(services_json)
-
+                output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName',
+                                    'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin',
+                                    'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
+                                    'RevisionNumber', 'la_code', 'journey_pattern_json', 'vehicle_journey_json',
+                                    'services_json']
             else:
-                pass
-
-        output_df = pd.DataFrame(xml_output).T
-
-        if self.stop_level == True:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName',
-                                 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin',
-                                 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
-                                 'RevisionNumber', 'la_code', 'journey_pattern_json', 'vehicle_journey_json',
-                                 'services_json']
-        else:
-            output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName',
-                                 'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin',
-                                 'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
-                                 'RevisionNumber', 'la_code']
+                output_df.columns = ['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName',
+                                    'OperatorCode', 'ServiceCode', 'LineName', 'PublicUse', 'OperatingDays', 'Origin',
+                                    'Destination', 'OperatingPeriodStartDate', 'OperatingPeriodEndDate', 'SchemaVersion',
+                                    'RevisionNumber', 'la_code', 'serviced_org_present','days_of_non_operation_present','days_of_operation_present', 'departure_time']
+        except:
+            print("Exception in xml exception step")
+            pass
 
         return output_df
 
@@ -515,12 +539,14 @@ class TimetableExtractor:
         zip_table = pd.DataFrame(
             columns=['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode',
                      'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate',
-                     'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber', 'journey_pattern_json'])
+                     'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber', 'journey_pattern_json', 'serviced_org_present','days_of_non_operation_present','days_of_operation_present','departure_time'])
         xml_table = pd.DataFrame(
             columns=['URL', 'FileName', 'NOC', 'TradingName', 'LicenceNumber', 'OperatorShortName', 'OperatorCode',
                      'ServiceCode', 'LineName', 'PublicUse', 'Origin', 'Destination', 'OperatingPeriodStartDate',
-                     'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber', 'journey_pattern_json'])
+                     'OperatingPeriodEndDate', 'SchemaVersion', 'RevisionNumber', 'journey_pattern_json', 'serviced_org_present','days_of_non_operation_present','days_of_operation_present','departure_time'])
 
+        
+        self.metadata = self.metadata.loc[self.metadata['filetype'].isin(['zip','xml'])]
         metadata_table = self.metadata
 
         master_table[['URL', 'DatasetID', 'OperatorName', 'Description', 'Comment', 'Status', 'dq_score', 'dq_rag',
@@ -611,8 +637,7 @@ class TimetableExtractor:
                 ['journey_pattern_json', 'vehicle_journey_json', 'services_json', 'la_code'], axis=1).drop_duplicates()
             self.check_for_expired_operators()
         else:
-            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'],
-                                                                                            axis=1).drop_duplicates()
+            self.service_line_extract = self.service_line_extract_with_stop_level_json.drop(['la_code'], axis=1).drop_duplicates(subset=['FileName','ServiceCode','LineName','OperatingPeriodStartDate','OperatingPeriodEndDate','RevisionNumber','OperatingDays'])
             self.check_for_expired_operators()
         return self.service_line_extract
 
@@ -692,6 +717,10 @@ class TimetableExtractor:
         method = zip_longest if zipped else product
 
         rest = {*df} - {*explode}
+        
+        # Handle cases where the 'explode' columns may have None or empty lists
+        for column in explode:
+            df[column] = df[column].apply(lambda x: [] if not len(x)>0 else x)
 
         zipped = zip(zip(*map(df.get, rest)), zip(*map(df.get, explode)))
         tups = [tup + exploded
@@ -2218,6 +2247,65 @@ class xmlDataExtractor:
 
         return operating_days
 
+    def exract_serviced_organisation_working_days(self):
+        """
+        Get all Serviced Organisations
+        """
+        serviced_org_present = False
+        data = self.root.findall('ServicedOrganisations//ServicedOrganisation', self.namespace)
+
+        if len(data) > 0:
+            serviced_org_present = True
+        else:
+            serviced_org_present = False
+            
+        # Initialize flags for the two operations
+        days_of_non_operation_present = False
+        days_of_operation_present = False
+
+        # Find ServicedOrganisationDayType elements
+        serviced_org_day_type = self.root.findall("Services//Service/OperatingProfile/ServicedOrganisationDayType", self.namespace)
+
+        # if empty we proceed to service line level
+        if serviced_org_day_type == []:
+            serviced_org_day_type = self.root.findall("VehicleJourneys//VehicleJourney/OperatingProfile/ServicedOrganisationDayType",
+                                     self.namespace)
+        
+        # Check if DaysOfNonOperation exists
+        if serviced_org_day_type != []:
+            if self.root.findall(".//ServicedOrganisationDayType/DaysOfNonOperation", self.namespace) != []:
+                days_of_non_operation_present = True
+
+            # Check if DaysOfOperation exists
+            if self.root.findall(".//ServicedOrganisationDayType/DaysOfOperation", self.namespace) != []:
+                days_of_operation_present = True
+            
+        return serviced_org_present,days_of_non_operation_present,days_of_operation_present
+
+    def extract_departure_time(self):
+        """
+        Extract all departure times of all vehicle journeys
+        """
+        # Initialize an empty dictionary to store the result
+        departure_dict = {}
+        vehicle_journey = self.root.findall("VehicleJourneys//VehicleJourney", self.namespace)
+        # Loop through each VehicleJourney element
+        for journey in vehicle_journey:
+            # Extract DepartureTime and JourneyPatternRef
+            departure_time = journey.find("DepartureTime", self.namespace).text
+            journey_pattern_ref = journey.find("JourneyPatternRef", self.namespace).text
+            departure_dict[departure_time] = journey_pattern_ref
+            
+        journey_patterns = self.root.findall("Services//Service/StandardService//JourneyPattern", self.namespace)
+        for pattern in journey_patterns:
+            journey_pattern_id = pattern.get("id")
+            direction = pattern.find("Direction", self.namespace).text
+            direction = direction if direction is not None else None
+            for key, value in departure_dict.items():
+                if value == journey_pattern_id:
+                    departure_dict[key] = direction        
+        return departure_dict
+    
     def extract_service_origin(self):
 
         '''

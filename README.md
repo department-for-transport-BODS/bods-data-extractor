@@ -399,9 +399,9 @@ count_of_service_codes = my_bus_data_object.count_service_codes()# returns count
 
 valid_service_codes = my_bus_data_object.valid_service_codes()# returns count of unique and valid service codes chosen dataset, a dataframe with all the records with valid service codes and a dataframe with all the invalid service codes.
 
-services_published_in_TXC_2_4 = my_bus_data_object.services_published_in_TXC_2_4()#returns percentage of services published in TXC 2.4 schema, and a dataframe of these records, and a dataframe of the records that are not published in this schema
+services_published_in_TXC_2_4 = my_bus_data_object.services_published_in_TXC_2_4() #returns percentage of services published using the BODS/TXC-PTI 2.4.1 profile, based on the TransXChange 2.4 schema, and a dataframe of these records, and a dataframe of the records that are not published using this profile
 
-datasets_published_in_TXC_2_4 = my_bus_data_object.datasets_published_in_TXC_2_4()# returns percentage of datasets published in TXC 2.4 schema, and a dataframe of these records, and a dataframe of the records that are not published in this schema
+datasets_published_in_TXC_2_4 = my_bus_data_object.datasets_published_in_TXC_2_4()# returns percentage of datasets published using the BODS/TXC-PTI 2.4.1 profile, based on the TransXChange 2.4 schema, and a dataframe of these records, and a dataframe of the records that are not published using this profile
 
 red_dq = my_bus_data_object.red_dq_scores() #returns the number of operators in a table with red dq scores
 
@@ -520,7 +520,7 @@ A “service” is a collection of lines that together make up a coherent set of
 #### What is the OTC database and how does it relate?
 “OTC” stands for the “Office for the Traffic Commissioner”. This office is responsible for the registering and compliance monitoring of local bus services to ensure that operators meet their statutory obligations. The “OTC database” collects this information together for additional reference with the BDE package.
 #### What are PTI standards? What is the link for more info?
-As part of the DfT Bus Open Data Service (BODS) project, a new TransXChange version 2.4 profile named the UK Passenger Transport Information Profile (TXC-PTI for short) has been commissioned. These standards aim to provide a common standard for exchanging UK timetable and schedule data within BODS and similar systems. Please find related links to each standard listed below.
+As part of the DfT Bus Open Data Service (BODS) project, the BODS/TXC-PTI 2.4.1 profile, based on the TransXChange 2.4 schema, has been commissioned as the UK Passenger Transport Information Profile (TXC-PTI for short). These standards aim to provide a common standard for exchanging UK timetable and schedule data within BODS and similar systems. Please find related links to each standard listed below.
 
 •	[Timetables](https://pti.org.uk/system/files/files/TransXChange_UK_PTI_Profile_v1.1.A.pdf)\
 •	[Fares](http://netex.uk/farexchange/)\
